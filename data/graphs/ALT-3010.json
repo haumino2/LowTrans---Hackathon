@@ -1,0 +1,25 @@
+{
+  "alert_id": "ALT-3010",
+  "customer_name": "Nina Kowalski",
+  "flagged_node_ids": ["wallet-nina", "privacy-pool", "sdn-cluster", "mixer-railgun"],
+  "nodes": [
+    { "id": "customer-nina", "type": "customer", "label": "Nina Kowalski", "subtitle": "CUST-8834 · Poland", "risk": "high", "position": { "x": 450, "y": 40 } },
+    { "id": "wallet-nina", "type": "wallet", "label": "0xdead...b7c8d9", "subtitle": "Primary · 1 day old", "risk": "high", "position": { "x": 450, "y": 180 } },
+    { "id": "privacy-pool", "type": "mixer", "label": "Privacy Pool Cluster", "subtitle": "5 bridge hops", "risk": "high", "position": { "x": 250, "y": 340 } },
+    { "id": "mixer-railgun", "type": "mixer", "label": "Railgun Mixer", "subtitle": "Privacy protocol", "risk": "high", "position": { "x": 450, "y": 340 } },
+    { "id": "sdn-cluster", "type": "counterparty", "label": "SDN Adjacent Cluster", "subtitle": "3 fuzzy matches", "risk": "high", "position": { "x": 650, "y": 340 } },
+    { "id": "wallet-struct-1", "type": "wallet", "label": "0xabc1...def2", "subtitle": "Structuring wallet", "risk": "medium", "position": { "x": 150, "y": 500 } },
+    { "id": "wallet-struct-2", "type": "wallet", "label": "0x1234...5678", "subtitle": "Structuring wallet", "risk": "medium", "position": { "x": 350, "y": 500 } },
+    { "id": "wallet-struct-3", "type": "wallet", "label": "0x9abc...0def", "subtitle": "Structuring wallet", "risk": "medium", "position": { "x": 550, "y": 500 } }
+  ],
+  "edges": [
+    { "id": "e1", "source": "customer-nina", "target": "wallet-nina", "label": "Owns", "amount_usd": null },
+    { "id": "e2", "source": "wallet-nina", "target": "privacy-pool", "label": "$28,000", "amount_usd": 28000 },
+    { "id": "e3", "source": "wallet-nina", "target": "mixer-railgun", "label": "$35,000", "amount_usd": 35000 },
+    { "id": "e4", "source": "mixer-railgun", "target": "sdn-cluster", "label": "Post-mixer route", "amount_usd": 22000 },
+    { "id": "e5", "source": "wallet-nina", "target": "wallet-struct-1", "label": "$9,800", "amount_usd": 9800 },
+    { "id": "e6", "source": "wallet-nina", "target": "wallet-struct-2", "label": "$9,500", "amount_usd": 9500 },
+    { "id": "e7", "source": "wallet-nina", "target": "wallet-struct-3", "label": "$9,200", "amount_usd": 9200 },
+    { "id": "e8", "source": "privacy-pool", "target": "sdn-cluster", "label": "Cross-chain hop", "amount_usd": 15000 }
+  ]
+}

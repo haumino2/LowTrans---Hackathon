@@ -1,0 +1,672 @@
+[
+  {
+    "id": "ALT-3001",
+    "customer_id": "CUST-8821",
+    "customer_name": "Marcus Chen",
+    "email": "mchen@protonmail.com",
+    "partner": "Summit Crypto Exchange",
+    "partner_id": "185654",
+    "session_id": "SES-9f2a8b1c",
+    "status": "pending",
+    "asset": "USDC",
+    "network": "Ethereum",
+    "amount_usd": 2400,
+    "direction": "withdrawal",
+    "kyt_score": 22,
+    "risk_level": "low",
+    "risk_tags": [
+      "new_wallet"
+    ],
+    "wallet_address": "0x7a3f8b2c1d9e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9c2d",
+    "counterparty": "Coinbase hot wallet",
+    "travel_rule_status": "complete",
+    "account_age_days": 45,
+    "device_os": "macOS 14",
+    "flow_type": "Withdrawal Flow",
+    "country": "United States",
+    "state": "CA",
+    "address": "1842 Market St, San Francisco",
+    "zip": "94103",
+    "phone": "+1-415-555-0192",
+    "connections": 3,
+    "created_at": "2025-07-06T10:15:00Z",
+    "signals": {
+      "wallet_age_days": 45,
+      "mixer_exposure": false,
+      "sanctions_hit": false,
+      "pep_hit": false,
+      "device_risk": "low",
+      "ip_country": "US"
+    },
+    "rules_fired": [],
+    "sanctions_screening": {
+      "status": "clear",
+      "matches": 0
+    },
+    "crypto_details": {
+      "chain": "Ethereum",
+      "confirmations": 12,
+      "gas_used": "21000"
+    }
+  },
+  {
+    "id": "ALT-3002",
+    "customer_id": "CUST-2290",
+    "customer_name": "Brooke Ramirez",
+    "email": "bramirezz93@mail.com",
+    "partner": "Summit Retail Group, Inc.",
+    "partner_id": "185654",
+    "session_id": "SES-4c7d2e9a",
+    "status": "pending",
+    "asset": "ETH",
+    "network": "Ethereum",
+    "amount_usd": 52000,
+    "direction": "withdrawal",
+    "kyt_score": 78,
+    "risk_level": "high",
+    "risk_tags": [
+      "mixer_exposure",
+      "high_risk_jurisdiction",
+      "travel_rule_missing"
+    ],
+    "wallet_address": "0x8b2e4f1a3c5d7e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e4f1a",
+    "counterparty": "Tornado Cash adjacent cluster",
+    "travel_rule_status": "missing",
+    "account_age_days": 0,
+    "device_os": "Windows 11",
+    "flow_type": "Registration Flow",
+    "country": "United States",
+    "state": "OH",
+    "address": "2807 Robinson Lane",
+    "zip": "43050",
+    "phone": "+1-289-874-9634",
+    "connections": 12,
+    "created_at": "2025-07-06T09:42:00Z",
+    "signals": {
+      "wallet_age_days": 3,
+      "mixer_exposure": true,
+      "sanctions_hit": false,
+      "pep_hit": false,
+      "device_risk": "high",
+      "ip_country": "US"
+    },
+    "rules_fired": [
+      {
+        "id": "R-101",
+        "name": "Mixer Exposure Detected",
+        "severity": "critical"
+      },
+      {
+        "id": "R-205",
+        "name": "Travel Rule Missing > $3K",
+        "severity": "high"
+      },
+      {
+        "id": "R-088",
+        "name": "New Account High Value Withdrawal",
+        "severity": "medium"
+      }
+    ],
+    "sanctions_screening": {
+      "status": "review",
+      "matches": 1,
+      "note": "Fuzzy name match - under review"
+    },
+    "crypto_details": {
+      "chain": "Ethereum",
+      "confirmations": 6,
+      "bridge_hops": 2
+    }
+  },
+  {
+    "id": "ALT-3003",
+    "customer_id": "CUST-4410",
+    "customer_name": "Elena Vasquez",
+    "email": "elena.v@email.com",
+    "partner": "Summit Crypto Exchange",
+    "partner_id": "185654",
+    "session_id": "SES-1a3b5c7d",
+    "status": "pending",
+    "asset": "BTC",
+    "network": "Bitcoin",
+    "amount_usd": 8900,
+    "direction": "deposit",
+    "kyt_score": 28,
+    "risk_level": "low",
+    "risk_tags": [],
+    "wallet_address": "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+    "counterparty": "Kraken deposit",
+    "travel_rule_status": "complete",
+    "account_age_days": 312,
+    "device_os": "iOS 17",
+    "flow_type": "Deposit Flow",
+    "country": "Spain",
+    "state": "Madrid",
+    "address": "Calle Mayor 15",
+    "zip": "28013",
+    "phone": "+34-612-345-678",
+    "connections": 5,
+    "created_at": "2025-07-06T08:30:00Z",
+    "signals": {
+      "wallet_age_days": 312,
+      "mixer_exposure": false,
+      "sanctions_hit": false,
+      "pep_hit": false,
+      "device_risk": "low",
+      "ip_country": "ES"
+    },
+    "rules_fired": [],
+    "sanctions_screening": {
+      "status": "clear",
+      "matches": 0
+    },
+    "crypto_details": {
+      "chain": "Bitcoin",
+      "confirmations": 3
+    }
+  },
+  {
+    "id": "ALT-3004",
+    "customer_id": "CUST-7733",
+    "customer_name": "James Okonkwo",
+    "email": "j.okonkwo@outlook.com",
+    "partner": "Summit Crypto Exchange",
+    "partner_id": "185654",
+    "session_id": "SES-8e6f0a2b",
+    "status": "pending",
+    "asset": "USDT",
+    "network": "Tron",
+    "amount_usd": 15000,
+    "direction": "withdrawal",
+    "kyt_score": 55,
+    "risk_level": "medium",
+    "risk_tags": [
+      "travel_rule_mismatch"
+    ],
+    "wallet_address": "TXyz8k2mN4pQ6rS8tU0vW2xY4zA6bC8dE0fG2hI4jK6",
+    "counterparty": "Unknown VASP",
+    "travel_rule_status": "mismatch",
+    "account_age_days": 120,
+    "device_os": "Android 14",
+    "flow_type": "Withdrawal Flow",
+    "country": "Nigeria",
+    "state": "Lagos",
+    "address": "12 Victoria Island Rd",
+    "zip": "101241",
+    "phone": "+234-803-555-1234",
+    "connections": 8,
+    "created_at": "2025-07-06T07:55:00Z",
+    "signals": {
+      "wallet_age_days": 120,
+      "mixer_exposure": false,
+      "sanctions_hit": false,
+      "pep_hit": false,
+      "device_risk": "medium",
+      "ip_country": "NG"
+    },
+    "rules_fired": [
+      {
+        "id": "R-150",
+        "name": "Travel Rule Beneficiary Mismatch",
+        "severity": "medium"
+      }
+    ],
+    "sanctions_screening": {
+      "status": "clear",
+      "matches": 0
+    },
+    "crypto_details": {
+      "chain": "Tron",
+      "confirmations": 20
+    }
+  },
+  {
+    "id": "ALT-3005",
+    "customer_id": "CUST-9902",
+    "customer_name": "Ahmed Al-Rashid",
+    "email": "a.rashid@mail.com",
+    "partner": "Summit Crypto Exchange",
+    "partner_id": "185654",
+    "session_id": "SES-5d9c1f3e",
+    "status": "pending",
+    "asset": "BTC",
+    "network": "Bitcoin",
+    "amount_usd": 8500,
+    "direction": "withdrawal",
+    "kyt_score": 72,
+    "risk_level": "high",
+    "risk_tags": [
+      "sanctions_near_match",
+      "pep_adjacent"
+    ],
+    "wallet_address": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+    "counterparty": "OFAC-adjacent entity",
+    "travel_rule_status": "complete",
+    "account_age_days": 14,
+    "device_os": "Windows 10",
+    "flow_type": "Withdrawal Flow",
+    "country": "UAE",
+    "state": "Dubai",
+    "address": "Sheikh Zayed Road 100",
+    "zip": "00000",
+    "phone": "+971-50-123-4567",
+    "connections": 2,
+    "created_at": "2025-07-06T06:20:00Z",
+    "signals": {
+      "wallet_age_days": 14,
+      "mixer_exposure": false,
+      "sanctions_hit": true,
+      "pep_hit": true,
+      "device_risk": "high",
+      "ip_country": "AE"
+    },
+    "rules_fired": [
+      {
+        "id": "R-001",
+        "name": "Sanctions List Fuzzy Match",
+        "severity": "critical"
+      },
+      {
+        "id": "R-042",
+        "name": "PEP Adjacent Connection",
+        "severity": "high"
+      }
+    ],
+    "sanctions_screening": {
+      "status": "hit",
+      "matches": 2,
+      "note": "OFAC SDN fuzzy match 87%"
+    },
+    "crypto_details": {
+      "chain": "Bitcoin",
+      "confirmations": 1
+    }
+  },
+  {
+    "id": "ALT-3006",
+    "customer_id": "CUST-5501",
+    "customer_name": "Yuki Tanaka",
+    "email": "y.tanaka@yahoo.co.jp",
+    "partner": "Summit Crypto Exchange",
+    "partner_id": "185654",
+    "session_id": "SES-2b4d6f8a",
+    "status": "pending",
+    "asset": "SOL",
+    "network": "Solana",
+    "amount_usd": 3200,
+    "direction": "deposit",
+    "kyt_score": 18,
+    "risk_level": "low",
+    "risk_tags": [],
+    "wallet_address": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+    "counterparty": "Phantom self-custody",
+    "travel_rule_status": "n/a",
+    "account_age_days": 200,
+    "device_os": "macOS 13",
+    "flow_type": "Deposit Flow",
+    "country": "Japan",
+    "state": "Tokyo",
+    "address": "Shibuya 2-1-1",
+    "zip": "150-0002",
+    "phone": "+81-90-1234-5678",
+    "connections": 4,
+    "created_at": "2025-07-06T05:45:00Z",
+    "signals": {
+      "wallet_age_days": 200,
+      "mixer_exposure": false,
+      "sanctions_hit": false,
+      "pep_hit": false,
+      "device_risk": "low",
+      "ip_country": "JP"
+    },
+    "rules_fired": [],
+    "sanctions_screening": {
+      "status": "clear",
+      "matches": 0
+    },
+    "crypto_details": {
+      "chain": "Solana",
+      "confirmations": 32
+    }
+  },
+  {
+    "id": "ALT-3007",
+    "customer_id": "CUST-3344",
+    "customer_name": "Viktor Petrov",
+    "email": "v.petrov@yandex.ru",
+    "partner": "Summit Crypto Exchange",
+    "partner_id": "185654",
+    "session_id": "SES-7c9e1a3b",
+    "status": "pending",
+    "asset": "ETH",
+    "network": "Ethereum",
+    "amount_usd": 4200,
+    "direction": "withdrawal",
+    "kyt_score": 48,
+    "risk_level": "medium",
+    "risk_tags": [
+      "defi_bridge",
+      "structuring"
+    ],
+    "wallet_address": "0x9c1a7e3f5b2d8a4c6e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3",
+    "counterparty": "Multi-hop DeFi bridge",
+    "travel_rule_status": "incomplete",
+    "account_age_days": 60,
+    "device_os": "Linux",
+    "flow_type": "Withdrawal Flow",
+    "country": "Germany",
+    "state": "Berlin",
+    "address": "Alexanderplatz 5",
+    "zip": "10178",
+    "phone": "+49-170-555-7890",
+    "connections": 6,
+    "created_at": "2025-07-06T04:30:00Z",
+    "signals": {
+      "wallet_age_days": 60,
+      "mixer_exposure": false,
+      "sanctions_hit": false,
+      "pep_hit": false,
+      "device_risk": "medium",
+      "ip_country": "DE"
+    },
+    "rules_fired": [
+      {
+        "id": "R-220",
+        "name": "DeFi Bridge Hops > 3",
+        "severity": "medium"
+      }
+    ],
+    "sanctions_screening": {
+      "status": "clear",
+      "matches": 0
+    },
+    "crypto_details": {
+      "chain": "Ethereum",
+      "bridge_hops": 4
+    }
+  },
+  {
+    "id": "ALT-3008",
+    "customer_id": "CUST-1120",
+    "customer_name": "Carlos Mendez",
+    "email": "c.mendez@hotmail.com",
+    "partner": "Summit Crypto Exchange",
+    "partner_id": "185654",
+    "session_id": "SES-0f2e4a6c",
+    "status": "pending",
+    "asset": "USDT",
+    "network": "Ethereum",
+    "amount_usd": 28000,
+    "direction": "withdrawal",
+    "kyt_score": 68,
+    "risk_level": "high",
+    "risk_tags": [
+      "high_risk_jurisdiction",
+      "travel_rule_missing"
+    ],
+    "wallet_address": "0x2f8b1c4d6e0a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a0b2",
+    "counterparty": "Unhosted wallet - Cayman",
+    "travel_rule_status": "missing",
+    "account_age_days": 7,
+    "device_os": "Windows 11",
+    "flow_type": "Withdrawal Flow",
+    "country": "Mexico",
+    "state": "CDMX",
+    "address": "Paseo de la Reforma 250",
+    "zip": "06600",
+    "phone": "+52-55-1234-5678",
+    "connections": 1,
+    "created_at": "2025-07-06T03:15:00Z",
+    "signals": {
+      "wallet_age_days": 7,
+      "mixer_exposure": false,
+      "sanctions_hit": false,
+      "pep_hit": false,
+      "device_risk": "medium",
+      "ip_country": "MX"
+    },
+    "rules_fired": [
+      {
+        "id": "R-205",
+        "name": "Travel Rule Missing > $3K",
+        "severity": "high"
+      },
+      {
+        "id": "R-180",
+        "name": "High-Risk Jurisdiction Off-ramp",
+        "severity": "high"
+      }
+    ],
+    "sanctions_screening": {
+      "status": "clear",
+      "matches": 0
+    },
+    "crypto_details": {
+      "chain": "Ethereum",
+      "confirmations": 15
+    }
+  },
+  {
+    "id": "ALT-3009",
+    "customer_id": "CUST-6618",
+    "customer_name": "Sarah Mitchell",
+    "email": "s.mitchell@gmail.com",
+    "partner": "Summit Crypto Exchange",
+    "partner_id": "185654",
+    "session_id": "SES-3a5c7e9f",
+    "status": "pending",
+    "asset": "USDC",
+    "network": "Polygon",
+    "amount_usd": 980,
+    "direction": "deposit",
+    "kyt_score": 12,
+    "risk_level": "low",
+    "risk_tags": [],
+    "wallet_address": "0x4d5c2b8e1a3f6c9d0e2b5a8c1d4f7e0a3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e",
+    "counterparty": "Circle mint",
+    "travel_rule_status": "complete",
+    "account_age_days": 500,
+    "device_os": "iOS 18",
+    "flow_type": "Deposit Flow",
+    "country": "United States",
+    "state": "NY",
+    "address": "350 5th Avenue",
+    "zip": "10118",
+    "phone": "+1-212-555-0147",
+    "connections": 2,
+    "created_at": "2025-07-06T02:00:00Z",
+    "signals": {
+      "wallet_age_days": 500,
+      "mixer_exposure": false,
+      "sanctions_hit": false,
+      "pep_hit": false,
+      "device_risk": "low",
+      "ip_country": "US"
+    },
+    "rules_fired": [],
+    "sanctions_screening": {
+      "status": "clear",
+      "matches": 0
+    },
+    "crypto_details": {
+      "chain": "Polygon",
+      "confirmations": 128
+    }
+  },
+  {
+    "id": "ALT-3010",
+    "customer_id": "CUST-8834",
+    "customer_name": "Nina Kowalski",
+    "email": "n.kowalski@proton.me",
+    "partner": "Summit Crypto Exchange",
+    "partner_id": "185654",
+    "session_id": "SES-6b8d0e2f",
+    "status": "pending",
+    "asset": "ETH",
+    "network": "Ethereum",
+    "amount_usd": 95000,
+    "direction": "withdrawal",
+    "kyt_score": 85,
+    "risk_level": "high",
+    "risk_tags": [
+      "mixer_exposure",
+      "structuring",
+      "sanctions_near_match"
+    ],
+    "wallet_address": "0xdeadbeef1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9",
+    "counterparty": "Privacy pool cluster",
+    "travel_rule_status": "missing",
+    "account_age_days": 1,
+    "device_os": "Tails Linux",
+    "flow_type": "Withdrawal Flow",
+    "country": "Poland",
+    "state": "Warsaw",
+    "address": "ul. Marsza\u0142kowska 100",
+    "zip": "00-001",
+    "phone": "+48-600-123-456",
+    "connections": 0,
+    "created_at": "2025-07-06T01:30:00Z",
+    "signals": {
+      "wallet_age_days": 1,
+      "mixer_exposure": true,
+      "sanctions_hit": true,
+      "pep_hit": false,
+      "device_risk": "critical",
+      "ip_country": "PL"
+    },
+    "rules_fired": [
+      {
+        "id": "R-101",
+        "name": "Mixer Exposure Detected",
+        "severity": "critical"
+      },
+      {
+        "id": "R-001",
+        "name": "Sanctions List Fuzzy Match",
+        "severity": "critical"
+      },
+      {
+        "id": "R-205",
+        "name": "Travel Rule Missing > $3K",
+        "severity": "high"
+      },
+      {
+        "id": "R-300",
+        "name": "Structuring Pattern Detected",
+        "severity": "high"
+      }
+    ],
+    "sanctions_screening": {
+      "status": "hit",
+      "matches": 3,
+      "note": "Multiple SDN adjacent matches"
+    },
+    "crypto_details": {
+      "chain": "Ethereum",
+      "bridge_hops": 5,
+      "privacy_pool": true
+    }
+  },
+  {
+    "id": "ALT-3011",
+    "customer_id": "CUST-6677",
+    "customer_name": "Omar Hassan",
+    "email": "o.hassan@email.com",
+    "partner": "Summit Crypto Exchange",
+    "partner_id": "185654",
+    "session_id": "SES-9d1f3a5c",
+    "status": "pending",
+    "asset": "BTC",
+    "network": "Bitcoin",
+    "amount_usd": 11000,
+    "direction": "withdrawal",
+    "kyt_score": 42,
+    "risk_level": "medium",
+    "risk_tags": [
+      "new_wallet"
+    ],
+    "wallet_address": "bc1q5m9xrt2klp4n6q8s0u2w4y6z8a0c2e4g6i8k0m2o4q6s8u0w2y4z6",
+    "counterparty": "Binance withdrawal",
+    "travel_rule_status": "complete",
+    "account_age_days": 12,
+    "device_os": "Android 13",
+    "flow_type": "Withdrawal Flow",
+    "country": "Egypt",
+    "state": "Cairo",
+    "address": "Nile Corniche 50",
+    "zip": "11511",
+    "phone": "+20-100-555-7890",
+    "connections": 3,
+    "created_at": "2025-07-05T22:00:00Z",
+    "signals": {
+      "wallet_age_days": 12,
+      "mixer_exposure": false,
+      "sanctions_hit": false,
+      "pep_hit": false,
+      "device_risk": "low",
+      "ip_country": "EG"
+    },
+    "rules_fired": [
+      {
+        "id": "R-088",
+        "name": "New Account High Value Withdrawal",
+        "severity": "low"
+      }
+    ],
+    "sanctions_screening": {
+      "status": "clear",
+      "matches": 0
+    },
+    "crypto_details": {
+      "chain": "Bitcoin",
+      "confirmations": 2
+    }
+  },
+  {
+    "id": "ALT-3012",
+    "customer_id": "CUST-4455",
+    "customer_name": "Lisa Wong",
+    "email": "lisa.wong@icloud.com",
+    "partner": "Summit Crypto Exchange",
+    "partner_id": "185654",
+    "session_id": "SES-4e6a8c0d",
+    "status": "pending",
+    "asset": "SOL",
+    "network": "Solana",
+    "amount_usd": 650,
+    "direction": "deposit",
+    "kyt_score": 15,
+    "risk_level": "low",
+    "risk_tags": [],
+    "wallet_address": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+    "counterparty": "Jupiter aggregator",
+    "travel_rule_status": "n/a",
+    "account_age_days": 90,
+    "device_os": "macOS 14",
+    "flow_type": "Deposit Flow",
+    "country": "Singapore",
+    "state": "SG",
+    "address": "1 Raffles Place",
+    "zip": "048616",
+    "phone": "+65-9123-4567",
+    "connections": 1,
+    "created_at": "2025-07-05T20:30:00Z",
+    "signals": {
+      "wallet_age_days": 90,
+      "mixer_exposure": false,
+      "sanctions_hit": false,
+      "pep_hit": false,
+      "device_risk": "low",
+      "ip_country": "SG"
+    },
+    "rules_fired": [],
+    "sanctions_screening": {
+      "status": "clear",
+      "matches": 0
+    },
+    "crypto_details": {
+      "chain": "Solana",
+      "confirmations": 1
+    }
+  }
+]

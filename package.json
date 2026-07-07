@@ -1,0 +1,12 @@
+{
+  "name": "lowtrans",
+  "private": true,
+  "scripts": {
+    "dev:api": "cd apps/api && python -m uvicorn main:app --reload --port 8000",
+    "dev:web": "cd apps/web && npm run dev",
+    "reset": "python scripts/reset_demo.py",
+    "preflight": "python scripts/preflight.py",
+    "db:up": "docker compose up -d",
+    "db:seed": "cd apps/api && python scripts/seed_db.py"
+  }
+}

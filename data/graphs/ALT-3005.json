@@ -1,0 +1,21 @@
+{
+  "alert_id": "ALT-3005",
+  "customer_name": "Ahmed Al-Rashid",
+  "flagged_node_ids": ["wallet-ahmed", "sdn-adjacent", "pep-entity"],
+  "nodes": [
+    { "id": "customer-ahmed", "type": "customer", "label": "Ahmed Al-Rashid", "subtitle": "CUST-9902 · UAE", "risk": "high", "position": { "x": 400, "y": 50 } },
+    { "id": "wallet-ahmed", "type": "wallet", "label": "1A1zP1...vfNa", "subtitle": "BTC wallet · 14 days", "risk": "high", "position": { "x": 400, "y": 200 } },
+    { "id": "sdn-adjacent", "type": "counterparty", "label": "OFAC SDN Adjacent", "subtitle": "87% fuzzy match", "risk": "high", "position": { "x": 200, "y": 380 } },
+    { "id": "pep-entity", "type": "counterparty", "label": "PEP Adjacent Entity", "subtitle": "Government-linked", "risk": "high", "position": { "x": 600, "y": 380 } },
+    { "id": "exchange-kraken", "type": "counterparty", "label": "Kraken Deposit", "subtitle": "Known CEX", "risk": "low", "position": { "x": 100, "y": 520 } },
+    { "id": "wallet-intermediary", "type": "wallet", "label": "bc1q...7hguz", "subtitle": "Intermediary · 2 hops", "risk": "medium", "position": { "x": 400, "y": 520 } }
+  ],
+  "edges": [
+    { "id": "e1", "source": "customer-ahmed", "target": "wallet-ahmed", "label": "Owns", "amount_usd": null },
+    { "id": "e2", "source": "wallet-ahmed", "target": "sdn-adjacent", "label": "$4,200 transfer", "amount_usd": 4200 },
+    { "id": "e3", "source": "wallet-ahmed", "target": "pep-entity", "label": "$2,800 transfer", "amount_usd": 2800 },
+    { "id": "e4", "source": "exchange-kraken", "target": "wallet-ahmed", "label": "$12,000 deposit", "amount_usd": 12000 },
+    { "id": "e5", "source": "wallet-ahmed", "target": "wallet-intermediary", "label": "$8,500 withdrawal", "amount_usd": 8500 },
+    { "id": "e6", "source": "wallet-intermediary", "target": "sdn-adjacent", "label": "Indirect link", "amount_usd": 3100 }
+  ]
+}

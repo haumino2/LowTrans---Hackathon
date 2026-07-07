@@ -1,0 +1,30 @@
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Node / Next
+node_modules/
+.next/
+out/
+.turbo/
+dist/
+
+# Logs
+*.log
+
+# Local env
+.env
+.env.*
+
+# Local DB / data
+data/*.db
+data/*.sqlite*
+

@@ -40,8 +40,16 @@ def get_skill(skill_id: str) -> dict[str, Any] | None:
 
 
 def route_intent(message: str, alert_id: str | None = None) -> str:
-    """Simple keyword router — picks skill for copilot."""
+    """Keyword router — picks skill for copilot fallback / single-hop."""
     lower = message.lower()
+    if any(w in lower for w in ("ml", "model score", "validate", "feature attribution", "scorer")):
+        return "ml-validate"
+    # Alert-scoped investigation skills BEFORE shared analytics keywords
+    # ("mixer" / "exposure" would otherwise fall into analyst-nl-sql).
+    if alert_id and any(w in lower for w in ("graph", "mixer", "connection", "on-chain", "exposure")):
+        return "graph-summary"
+    if alert_id and any(w in lower for w in ("sanction", "ofac", "pep", "screening")):
+        return "sanctions-check"
     analyst_kw = (
         "sql", "query", "count", "how many", "average", "top", "fire rate",
         "transactions", "breakdown", "mixer", "exposure", "partner", "kyt",
@@ -50,16 +58,24 @@ def route_intent(message: str, alert_id: str | None = None) -> str:
     )
     if any(w in lower for w in analyst_kw):
         return "analyst-nl-sql"
-    if any(w in lower for w in ("similar", "precedent", "past case", "rag", "history")):
+    if any(w in lower for w in ("similar", "precedent", "past case", "rag", "history", "context")):
         return "rag-lookup"
     if any(w in lower for w in ("sar", "narrative", "filing", "suspicious activity")):
         return "sar-draft"
     if any(w in lower for w in ("policy", "threshold", "auto-clear", "aml policy")):
         return "policy-qa"
-    if alert_id and any(w in lower for w in ("graph", "mixer", "connection", "on-chain")):
-        return "graph-summary"
-    if alert_id and any(w in lower for w in ("sanction", "ofac", "pep", "screening")):
-        return "sanctions-check"
+    if any(w in lower for w in ("ubo", "ownership", "beneficial")):
+        return "ubo-unroll"
+    if any(w in lower for w in ("device", "ip anomaly", "fingerprint")):
+        return "device-ip-check"
+    if any(w in lower for w in ("structuring", "smurf", "behavioral")):
+        return "behavioral-patterns"
+    if any(w in lower for w in ("bridge", "fiat", "bank drop")):
+        return "fiat-crypto-bridge"
+    if any(w in lower for w in ("sla", "priority", "fast-track")):
+        return "sla-priority"
+    if any(w in lower for w in ("audit pack", "audit trail", "compile audit")):
+        return "audit-compile"
     if any(w in lower for w in ("osint", "research", "entity", "adverse media", "company")):
         return "osint-research"
     if any(w in lower for w in ("kyb", "due diligence", "business verify", "vasp partner")):

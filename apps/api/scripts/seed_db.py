@@ -1,11 +1,13 @@
-"""Seed Postgres from JSON + synthetic transaction analytics data."""
+"""Seed DB from hero alerts.json + ~488 synthetic alerts; sync transactions 1:1.
+
+Idempotent: each run replaces alerts/transactions (deterministic synthetic IDs).
+Resolved cases are re-loaded; audit log is cleared.
+"""
 
 from __future__ import annotations
 
 import json
-import random
 import sys
-from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -21,27 +23,29 @@ from db.models import (
     init_db,
     is_db_ready,
 )
+from scripts.gen_dataset import (
+    alert_to_transaction_kwargs,
+    build_dataset,
+    summarize_dataset,
+)
 
 DATA_DIR = Path(__file__).resolve().parents[3] / "data"
-
-ASSETS = ["BTC", "ETH", "USDC", "USDT", "SOL"]
-PARTNERS = [
-    "Summit Crypto Exchange",
-    "Summit Retail Group",
-    "Nordic Digital Assets",
-    "Pacific On-Ramp Ltd",
-]
-COUNTRIES = ["United States", "Germany", "Singapore", "UAE", "Brazil"]
 
 
 def seed() -> None:
     if not is_db_ready() and not init_db():
-        raise SystemExit("Database not available. Run: docker compose up -d")
+        raise SystemExit(
+            "Database not available. Default is SQLite (data/lowtrans.db); "
+            "ensure USE_DB is not false. Optional: set DATABASE_URL for Postgres."
+        )
 
     with open(DATA_DIR / "alerts.json", encoding="utf-8") as f:
-        alerts = json.load(f)
+        hero_alerts = json.load(f)
     with open(DATA_DIR / "resolved_cases.json", encoding="utf-8") as f:
         cases = json.load(f)
+
+    alerts = build_dataset(hero_alerts)
+    summary = summarize_dataset(alerts)
 
     session = get_session()
     try:
@@ -77,62 +81,27 @@ def seed() -> None:
                 )
             )
 
-        # Seed transactions from alerts + synthetic history
-        rng = random.Random(42)
-        tx_rows: list[TransactionRow] = []
-        for a in alerts:
-            signals = a.get("signals", {})
-            tx_rows.append(
-                TransactionRow(
-                    alert_id=a["id"],
-                    customer_id=a["customer_id"],
-                    customer_name=a["customer_name"],
-                    partner=a["partner"],
-                    asset=a["asset"],
-                    network=a["network"],
-                    direction=a["direction"],
-                    amount_usd=a["amount_usd"],
-                    kyt_score=a["kyt_score"],
-                    risk_level=a["risk_level"],
-                    travel_rule_status=a["travel_rule_status"],
-                    country=a["country"],
-                    rules_fired_count=len(a.get("rules_fired", [])),
-                    mixer_exposure=bool(signals.get("mixer_exposure")),
-                    sanctions_hit=bool(signals.get("sanctions_hit")),
-                    created_at=datetime.fromisoformat(
-                        a["created_at"].replace("Z", "+00:00")
-                    ).replace(tzinfo=None),
-                )
-            )
-
-        for i in range(120):
-            kyt = rng.randint(5, 95)
-            tx_rows.append(
-                TransactionRow(
-                    alert_id=None,
-                    customer_id=f"CUST-{8000 + i}",
-                    customer_name=f"Synthetic User {i}",
-                    partner=rng.choice(PARTNERS),
-                    asset=rng.choice(ASSETS),
-                    network=rng.choice(["Ethereum", "Bitcoin", "Solana", "Tron"]),
-                    direction=rng.choice(["deposit", "withdrawal"]),
-                    amount_usd=round(rng.uniform(100, 85000), 2),
-                    kyt_score=kyt,
-                    risk_level="high" if kyt > 65 else "medium" if kyt > 40 else "low",
-                    travel_rule_status=rng.choice(
-                        ["complete", "missing", "incomplete", "mismatch"]
-                    ),
-                    country=rng.choice(COUNTRIES),
-                    rules_fired_count=rng.randint(0, 4),
-                    mixer_exposure=kyt > 70 and rng.random() > 0.5,
-                    sanctions_hit=kyt > 80 and rng.random() > 0.85,
-                    created_at=datetime.utcnow() - timedelta(days=rng.randint(0, 30)),
-                )
-            )
-
+        # Transactions stay in lockstep with the alert set (Analyst ≡ Queue)
+        tx_rows = [
+            TransactionRow(**alert_to_transaction_kwargs(a)) for a in alerts
+        ]
         session.add_all(tx_rows)
         session.commit()
-        print(f"Seeded {len(alerts)} alerts, {len(cases)} cases, {len(tx_rows)} transactions")
+
+        print(
+            f"Seeded {summary['total']} alerts "
+            f"({summary['heroes']} heroes + {summary['total'] - summary['heroes']} synthetic), "
+            f"{len(cases)} cases, {len(tx_rows)} transactions"
+        )
+        print(
+            f"  pending={summary['pending']} clear={summary['cleared']} "
+            f"review={summary['review']} escalate={summary['escalated']} "
+            f"auto_clear_rate={summary['auto_clear_rate']}%"
+        )
+        print(
+            f"  kyt: <35={summary['kyt_lt_35']} "
+            f"35–65={summary['kyt_35_65']} >65={summary['kyt_gt_65']}"
+        )
     finally:
         session.close()
 

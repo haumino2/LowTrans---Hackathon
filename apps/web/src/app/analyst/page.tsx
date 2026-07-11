@@ -5,6 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { Database } from "lucide-react";
 import { AppShell } from "@/components/shell/AppShell";
 import { AnalystVisualization } from "@/components/analyst/AnalystVisualization";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageSkeleton, Skeleton } from "@/components/ui/Skeleton";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { api, type AnalystAskResult } from "@/lib/api";
 
 const EXAMPLES = [
@@ -23,6 +27,7 @@ function AnalystInner() {
   const [result, setResult] = useState<AnalystAskResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [asked, setAsked] = useState(false);
 
   useEffect(() => {
     const aid = searchParams.get("alert_id");
@@ -36,6 +41,7 @@ function AnalystInner() {
     setLoading(true);
     setError("");
     setResult(null);
+    setAsked(true);
     try {
       const prefix = alertId ? `[case ${alertId}] ` : "";
       const res = await api.analystAsk(prefix + text);
@@ -50,10 +56,10 @@ function AnalystInner() {
   return (
     <div className="mx-auto max-w-5xl p-6">
       <div className="mb-6 flex items-center gap-2">
-        <Database className="h-5 w-5 text-indigo-600" />
-        <h2 className="text-xl font-semibold text-gray-900">Data Analyst Workspace</h2>
+        <Database className="h-5 w-5 text-accent" aria-hidden />
+        <h2 className="text-xl font-semibold text-chrome-900">Data Analyst Workspace</h2>
       </div>
-      <p className="mb-4 text-sm text-gray-500">
+      <p className="mb-4 text-sm text-chrome-500">
         NL-to-SQL skill — read-only queries over the transaction warehouse.
       </p>
 
@@ -61,7 +67,8 @@ function AnalystInner() {
         value={alertId}
         onChange={(e) => setAlertId(e.target.value)}
         placeholder="Case context alert ID (optional)"
-        className="mb-4 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+        className="mb-4 w-full rounded-md border border-chrome-200 px-3 py-2 text-sm mono"
+        aria-label="Case context alert ID"
       />
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -70,7 +77,7 @@ function AnalystInner() {
             key={ex}
             type="button"
             onClick={() => ask(ex)}
-            className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+            className="rounded-md border border-chrome-200 bg-white px-3 py-1 text-xs text-chrome-600 hover:bg-chrome-50"
           >
             {ex}
           </button>
@@ -83,19 +90,40 @@ function AnalystInner() {
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && ask()}
           placeholder="Ask in plain English..."
-          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+          className="flex-1 rounded-md border border-chrome-200 px-3 py-2 text-sm"
+          aria-label="Analyst question"
         />
-        <button
-          type="button"
-          onClick={() => ask()}
-          disabled={loading}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
+        <Button onClick={() => ask()} disabled={loading}>
           {loading ? "Running..." : "Run"}
-        </button>
+        </Button>
       </div>
 
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-4 text-sm text-risk-escalate">{error}</p>}
+
+      {loading && (
+        <div className="mt-6 space-y-3" role="status" aria-label="Running query">
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      )}
+
+      {!loading && asked && !error && !result?.visualization && (
+        <EmptyState
+          className="mt-6 rounded-lg border border-chrome-200 bg-white"
+          title="No rows returned"
+          description="Try a broader question, or start with an example like “high-KYT transactions by partner”."
+        />
+      )}
+
+      {!loading && !asked && (
+        <EmptyState
+          className="mt-6 rounded-lg border border-chrome-200 bg-white"
+          icon={<Database className="h-5 w-5" aria-hidden />}
+          title="Ask a portfolio question"
+          description="Use an example chip above, or type a question in plain English. Results render as tables and charts."
+        />
+      )}
+
       {result?.visualization && (
         <div className="mt-6">
           <AnalystVisualization data={result.visualization} />
@@ -108,9 +136,11 @@ function AnalystInner() {
 export default function AnalystPage() {
   return (
     <AppShell>
-      <Suspense fallback={<div className="p-6">Loading...</div>}>
-        <AnalystInner />
-      </Suspense>
+      <ErrorBoundary fallbackTitle="Analyst workspace failed">
+        <Suspense fallback={<PageSkeleton />}>
+          <AnalystInner />
+        </Suspense>
+      </ErrorBoundary>
     </AppShell>
   );
 }

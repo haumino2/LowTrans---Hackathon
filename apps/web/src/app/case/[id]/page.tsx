@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AppShell } from "@/components/shell/AppShell";
+import { PageSkeleton } from "@/components/ui/Skeleton";
 import { api, type CasePacket } from "@/lib/api";
 
 export default function CasePacketPage() {
@@ -40,7 +41,7 @@ export default function CasePacketPage() {
   if (loading || !pkt) {
     return (
       <AppShell>
-        <div className="p-6 text-gray-500">Loading case packet...</div>
+        <PageSkeleton />
       </AppShell>
     );
   }
@@ -118,7 +119,7 @@ export default function CasePacketPage() {
                     setSaving(false);
                   }
                 }}
-                className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
                 disabled={saving}
               >
                 Update
@@ -162,7 +163,7 @@ export default function CasePacketPage() {
                     setSaving(false);
                   }
                 }}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
               >
                 Add Note
               </button>
@@ -192,7 +193,7 @@ export default function CasePacketPage() {
                   <td className="px-4 py-3">{a.kyt_score}</td>
                   <td className="px-4 py-3 text-xs">{a.status}</td>
                   <td className="px-4 py-3">
-                    <Link href={`/cases/${a.id}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
+                    <Link href={`/cases/${a.id}`} className="text-accent hover:text-accent-hover font-medium">
                       Open alert workspace
                     </Link>
                   </td>

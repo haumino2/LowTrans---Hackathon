@@ -6,38 +6,101 @@ from typing import Any
 
 from agent.bedrock import is_configured, safe_invoke
 from agent.connectors.registry import kyb_connector, osint_connector, sanctions_connector
+from agent.domain.sanctions import ofac_available, screen_ofac
 from agent.tools.case_tools import read_alert
 from agent.tools.rag_tools import suggest_policy
 from db.repository import get_alert
+
+OFAC_SOURCE = "OFAC SDN (public list)"
+
+
+def _apply_ofac_to_alert(alert: dict[str, Any], ofac: dict[str, Any]) -> dict[str, Any]:
+    """Persist real OFAC result onto the alert dict (in-memory; caller may save)."""
+    hit = bool(ofac.get("hit"))
+    score = float(ofac.get("score") or 0.0)
+    pep = bool((alert.get("signals") or {}).get("pep_hit"))
+    status = "hit" if hit else ("review" if pep else "clear")
+    matched = ofac.get("matched_name")
+    program = ofac.get("program")
+    note_parts = []
+    if hit and matched:
+        note_parts.append(f"OFAC SDN match: {matched}" + (f" [{program}]" if program else ""))
+        note_parts.append(f"score={score:.0%}")
+    elif ofac.get("list_available"):
+        note_parts.append(f"No OFAC SDN hit (best score {score:.0%})")
+    else:
+        note_parts.append("OFAC list unavailable — screening skipped")
+    screening = {
+        "status": status,
+        "matches": 1 if hit else 0,
+        "note": "; ".join(note_parts),
+        "match_confidence": score,
+        "matched_name": matched,
+        "program": program,
+        "list_sources": [OFAC_SOURCE] if ofac.get("list_available") else ["OFAC SDN (unavailable)"],
+        "ofac": {
+            "hit": hit,
+            "score": score,
+            "matched_name": matched,
+            "program": program,
+            "uid": ofac.get("uid"),
+            "entry_count": ofac.get("entry_count"),
+        },
+    }
+    alert["sanctions_screening"] = screening
+    signals = dict(alert.get("signals") or {})
+    signals["sanctions_hit"] = hit
+    alert["signals"] = signals
+    if hit and "sanctions_proximity" not in (alert.get("risk_tags") or []):
+        alert.setdefault("risk_tags", []).append("sanctions_proximity")
+    return screening
 
 
 def screening_with_policy_overlay(
     alert_id: str,
     message: str,
     high_risk_countries: list[str] | None = None,
+    alert: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    alert = get_alert(alert_id)
+    alert = alert or get_alert(alert_id)
     if not alert:
         return {"error": "Alert not found"}
-    conn = sanctions_connector()
-    screening = conn.screen(name=alert["customer_name"], alert=alert)
-    s = screening.data
+
+    ofac: dict[str, Any] | None = None
+    if ofac_available():
+        ofac = screen_ofac(alert.get("customer_name"), alert.get("counterparty"))
+        s = _apply_ofac_to_alert(alert, ofac)
+        source = OFAC_SOURCE
+        confidence = float(ofac.get("score") or 0.0)
+    else:
+        conn = sanctions_connector()
+        screening = conn.screen(name=alert["customer_name"], alert=alert)
+        s = screening.data
+        source = f"simulated:{screening.source}" if not str(screening.source).startswith("simulated") else screening.source
+        confidence = float(screening.confidence)
+
     countries = high_risk_countries or []
     if countries:
         note = f"Session policy overlay: treat {', '.join(countries)} as elevated risk."
     else:
         note = s.get("note", "Standard screening lists applied.")
+
+    fields = [
+        {"label": "Status", "value": str(s.get("status", "unknown")).upper()},
+        {"label": "Matches", "value": str(s.get("matches", 0))},
+        {"label": "PEP", "value": "Yes" if s.get("pep") or (alert.get("signals") or {}).get("pep_hit") else "No"},
+        {"label": "Source", "value": source},
+        {"label": "Score", "value": f"{int(confidence * 100)}%"},
+    ]
+    if ofac is not None:
+        fields.append({"label": "Matched Name", "value": str(ofac.get("matched_name") or "—")})
+        fields.append({"label": "Program", "value": str(ofac.get("program") or "—")})
+
     cards = [
         {
             "type": "screening",
             "title": "Sanctions Screening",
-            "fields": [
-                {"label": "Status", "value": str(s.get("status", "unknown")).upper()},
-                {"label": "Matches", "value": str(s.get("matches", 0))},
-                {"label": "PEP", "value": "Yes" if s.get("pep") else "No"},
-                {"label": "Source", "value": screening.source},
-                {"label": "Confidence", "value": f"{int(screening.confidence * 100)}%"},
-            ],
+            "fields": fields,
         },
         {
             "type": "metrics",
@@ -49,19 +112,32 @@ def screening_with_policy_overlay(
             ],
         },
     ]
+    match_bit = ""
+    if ofac and ofac.get("hit"):
+        match_bit = f" matched_name=**{ofac.get('matched_name')}**, program=**{ofac.get('program')}**."
     reply = (
-        f"Screening for **{alert['customer_name']}** ({alert_id}): "
-        f"status **{s.get('status')}**, {s.get('matches', 0)} match(es). {note} "
-        f"(source: {screening.source}, confidence: {int(screening.confidence * 100)}%)"
+        f"Screening for **{alert['customer_name']}** / counterparty **{alert.get('counterparty', '—')}** "
+        f"({alert_id}): status **{s.get('status')}**, {s.get('matches', 0)} match(es), "
+        f"score {confidence:.0%}.{match_bit} {note} (source: {source})"
     )
     if message and is_configured():
         reply = safe_invoke(
             f"{message}\n\nContext: {reply}",
-            system="You are a Sanctions Screening Agent for a crypto VASP. Be concise.",
+            system=(
+                "You are a Sanctions Screening Agent for a crypto VASP. Be concise. "
+                "Interpret OFAC SDN match results; never invent a hit that is not in the context. "
+                "Never clear a confirmed OFAC hit."
+            ),
             fallback=reply,
         )
-    return {"reply": reply, "cards": cards, "type": "screening"}
-
+    return {
+        "reply": reply,
+        "cards": cards,
+        "type": "screening",
+        "ofac": ofac,
+        "source": source,
+        "sanctions_screening": s,
+    }
 
 def osint_research(entity_name: str, alert_id: str | None = None) -> dict[str, Any]:
     alert = read_alert(alert_id) if alert_id else None
@@ -95,7 +171,7 @@ def osint_research(entity_name: str, alert_id: str | None = None) -> dict[str, A
     reply = (
         f"OSINT summary for **{name}**: {d.get('status','active')} entity, "
         f"{d.get('sector','VASP')} sector, {d.get('adverse_media','no adverse media')}."
-        f" (source: {osint.source}, confidence: {int(osint.confidence * 100)}%)"
+        f" (source: {osint.source} [simulated], confidence: {int(osint.confidence * 100)}%)"
     )
     if is_configured():
         ctx = f"Entity: {name}, country: {(alert or {}).get('country', 'N/A')}"
@@ -138,7 +214,7 @@ def kyb_due_diligence(alert_id: str) -> dict[str, Any]:
         },
     ]
     return {
-        "reply": f"KYB review for **{partner}** — {d.get('license_status','registered')} (source: {kyb.source}, confidence: {int(kyb.confidence*100)}%).",
+        "reply": f"KYB review for **{partner}** — {d.get('license_status','registered')} (source: {kyb.source} [simulated], confidence: {int(kyb.confidence*100)}%).",
         "cards": cards,
         "type": "kyb",
     }

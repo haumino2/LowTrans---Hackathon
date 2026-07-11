@@ -199,9 +199,29 @@ def export_audit_csv() -> str:
     return "\n".join(lines)
 
 
+def _is_demo_hero(alert: dict[str, Any]) -> bool:
+    """Hero alerts used by Demo Mode — flagged at seed, or legacy ALT-3001..3012."""
+    if alert.get("demo_hero") is True:
+        return True
+    alert_id = str(alert.get("id") or "")
+    if alert_id.startswith("ALT-30") and len(alert_id) == 8:
+        # ALT-3001 … ALT-3012 (legacy JSON without demo_hero)
+        try:
+            n = int(alert_id.split("-")[1])
+            return 3001 <= n <= 3012
+        except ValueError:
+            return False
+    return False
+
+
 def reset_demo() -> int:
+    """Reset only demo hero alerts to pending; leave synthetic history intact."""
     alerts = load_alerts()
+    reset_count = 0
     for a in alerts:
+        if not _is_demo_hero(a):
+            continue
+        a["demo_hero"] = True
         a["status"] = "pending"
         a.pop("triage_result", None)
         a.pop("override", None)
@@ -212,6 +232,7 @@ def reset_demo() -> int:
         a.pop("case_state", None)
         a.pop("case_assigned_to", None)
         a.pop("case_notes", None)
+        reset_count += 1
     save_alerts(alerts)
     if is_db_ready():
         session = get_session()
@@ -224,13 +245,95 @@ def reset_demo() -> int:
         audit_path = DATA_DIR / "audit_log.jsonl"
         if audit_path.exists():
             audit_path.write_text("", encoding="utf-8")
-    return len(alerts)
+    return reset_count
+
+
+def _alert_to_tx_tuple(alert: dict[str, Any], row_id: int) -> tuple[Any, ...]:
+    """Map an alerts.json record onto the analyst transactions schema."""
+    signals = alert.get("signals") or {}
+    created = alert.get("created_at") or ""
+    if isinstance(created, str) and created.endswith("Z"):
+        created = created.replace("Z", "+00:00")
+    return (
+        row_id,
+        alert.get("id"),
+        alert.get("customer_id") or "",
+        alert.get("customer_name") or "",
+        alert.get("partner") or "",
+        alert.get("asset") or "",
+        alert.get("network") or "",
+        alert.get("direction") or "",
+        float(alert.get("amount_usd") or 0),
+        int(alert.get("kyt_score") or 0),
+        alert.get("risk_level") or "",
+        alert.get("travel_rule_status") or "",
+        alert.get("country") or "",
+        len(alert.get("rules_fired") or []),
+        1 if signals.get("mixer_exposure") else 0,
+        1 if signals.get("sanctions_hit") else 0,
+        alert.get("segment"),
+        alert.get("product"),
+        alert.get("rail"),
+        created,
+    )
+
+
+def run_sql_on_alerts_json(sql: str) -> tuple[list[str], list[list[Any]]]:
+    """Read-only analyst queries against alerts.json via in-memory SQLite."""
+    import sqlite3
+
+    alerts = _load_json_alerts()
+    conn = sqlite3.connect(":memory:")
+    try:
+        conn.execute(
+            """
+            CREATE TABLE transactions (
+              id INTEGER PRIMARY KEY,
+              alert_id TEXT,
+              customer_id TEXT,
+              customer_name TEXT,
+              partner TEXT,
+              asset TEXT,
+              network TEXT,
+              direction TEXT,
+              amount_usd REAL,
+              kyt_score INTEGER,
+              risk_level TEXT,
+              travel_rule_status TEXT,
+              country TEXT,
+              rules_fired_count INTEGER,
+              mixer_exposure INTEGER,
+              sanctions_hit INTEGER,
+              segment TEXT,
+              product TEXT,
+              rail TEXT,
+              created_at TEXT
+            )
+            """
+        )
+        rows = [_alert_to_tx_tuple(a, i + 1) for i, a in enumerate(alerts)]
+        conn.executemany(
+            """
+            INSERT INTO transactions (
+              id, alert_id, customer_id, customer_name, partner, asset, network,
+              direction, amount_usd, kyt_score, risk_level, travel_rule_status,
+              country, rules_fired_count, mixer_exposure, sanctions_hit,
+              segment, product, rail, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            rows,
+        )
+        cur = conn.execute(sql)
+        columns = [d[0] for d in cur.description] if cur.description else []
+        return columns, [list(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
 
 
 def run_sql_query(sql: str) -> tuple[list[str], list[list[Any]]]:
-    """Execute read-only SQL for Data Analyst."""
+    """Execute read-only SQL for Data Analyst. Falls back to alerts.json when DB is down."""
     if not is_db_ready():
-        raise RuntimeError("Database required for analyst queries")
+        return run_sql_on_alerts_json(sql)
     session = get_session()
     try:
         result = session.execute(__import__("sqlalchemy").text(sql))
@@ -244,7 +347,9 @@ def run_sql_query(sql: str) -> tuple[list[str], list[list[Any]]]:
 def get_analyst_schema() -> str:
     from db.models import is_sqlite
 
-    bool_type = "INTEGER" if is_sqlite() else "BOOLEAN"
+    # Demo JSON mode queries via in-memory SQLite — match that dialect.
+    use_sqlite = (not is_db_ready()) or is_sqlite()
+    bool_type = "INTEGER" if use_sqlite else "BOOLEAN"
     return f"""
 TABLE transactions (
   id INTEGER PRIMARY KEY,
@@ -263,6 +368,9 @@ TABLE transactions (
   rules_fired_count INTEGER,
   mixer_exposure {bool_type},
   sanctions_hit {bool_type},
+  segment VARCHAR,
+  product VARCHAR,
+  rail VARCHAR,
   created_at TIMESTAMP
 )
 """.strip()

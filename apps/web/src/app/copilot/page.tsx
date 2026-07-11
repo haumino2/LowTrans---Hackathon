@@ -6,6 +6,8 @@ import { Send, Bot, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/shell/AppShell";
 import { AnalystVisualization } from "@/components/analyst/AnalystVisualization";
 import { StructuredCardGrid } from "@/components/agent/StructuredCard";
+import { PageSkeleton, Skeleton } from "@/components/ui/Skeleton";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { api, type CopilotResponse } from "@/lib/api";
 
 const STARTERS = [
@@ -42,11 +44,10 @@ function CopilotInner() {
     setHistory((h) => [...h, { role: "user", content: msg }]);
     setLoading(true);
     try {
-      const assistantIdx = { idx: -1 };
-      setHistory((h) => {
-        assistantIdx.idx = h.length + 1;
-        return [...h, { role: "assistant", content: "", meta: { reply: "" } as CopilotResponse }];
-      });
+      setHistory((h) => [
+        ...h,
+        { role: "assistant", content: "", meta: { reply: "" } as CopilotResponse },
+      ]);
 
       let meta: CopilotResponse | undefined;
       let content = "";
@@ -56,8 +57,12 @@ function CopilotInner() {
         if (ev.event === "error") throw new Error(ev.message || "Stream error");
         setHistory((h) =>
           h.map((m, i) =>
-            i === assistantIdx.idx
-              ? { role: "assistant", content, meta: meta ? ({ ...meta, reply: content } as CopilotResponse) : m.meta }
+            i === h.length - 1
+              ? {
+                  role: "assistant",
+                  content,
+                  meta: meta ? ({ ...meta, reply: content } as CopilotResponse) : m.meta,
+                }
               : m
           )
         );
@@ -65,13 +70,24 @@ function CopilotInner() {
       // Fallback if backend returned immediately (should not happen, but safe)
       if (!content && !meta) {
         const res = await api.copilotChat(msg, alertId || undefined, sessionId);
-        setHistory((h) => h.filter((_, i) => i !== assistantIdx.idx).concat({ role: "assistant", content: res.reply, meta: res }));
+        setHistory((h) =>
+          h.map((m, i) =>
+            i === h.length - 1
+              ? { role: "assistant", content: res.reply, meta: res }
+              : m
+          )
+        );
       }
-    } catch {
-      setHistory((h) => [
-        ...h,
-        { role: "assistant", content: "Copilot unavailable — check API connection." },
-      ]);
+    } catch (err) {
+      const errMsg =
+        err instanceof Error && err.message
+          ? err.message
+          : "Copilot unavailable — check API connection.";
+      setHistory((h) =>
+        h.map((m, i) =>
+          i === h.length - 1 ? { role: "assistant", content: errMsg } : m
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -81,7 +97,7 @@ function CopilotInner() {
     <div className="mx-auto flex h-[calc(100vh-3.5rem)] max-w-4xl flex-col p-6">
       <div className="mb-4">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-indigo-600" />
+          <Sparkles className="h-5 w-5 text-accent" />
           <h2 className="text-xl font-semibold text-gray-900">AML Copilot</h2>
         </div>
         <p className="mt-1 text-sm text-gray-500">
@@ -101,7 +117,7 @@ function CopilotInner() {
       <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
           {history.length === 0 && (
-            <div className="rounded-lg bg-indigo-50 p-4 text-sm text-indigo-900">
+            <div className="rounded-lg bg-accent-muted p-4 text-sm text-chrome-900">
               <Bot className="mb-2 h-5 w-5" />
               Bind an alert ID for case-aware skills (screening, graph, SAR).
             </div>
@@ -110,11 +126,11 @@ function CopilotInner() {
             <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[90%] rounded-lg px-4 py-3 text-sm ${
-                  m.role === "user" ? "bg-indigo-600 text-white" : "bg-gray-50 text-gray-800"
+                  m.role === "user" ? "bg-accent text-white" : "bg-gray-50 text-gray-800"
                 }`}
               >
                 {m.role === "assistant" && m.meta?.skill_name && (
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-indigo-600">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-accent">
                     {m.meta.skill_name}
                   </p>
                 )}
@@ -131,17 +147,23 @@ function CopilotInner() {
               </div>
             </div>
           ))}
-          {loading && <div className="text-sm text-gray-400">Agent running skill...</div>}
+          {loading && (
+            <div className="max-w-[70%] space-y-2 rounded-lg bg-chrome-50 px-4 py-3" role="status" aria-label="Agent running">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+          )}
         </div>
 
-        <div className="border-t border-gray-100 p-3">
+        <div className="border-t border-chrome-100 p-3">
           <div className="mb-2 flex flex-wrap gap-2">
             {STARTERS.map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => send(s)}
-                className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-600 hover:bg-gray-100"
+                className="rounded-md border border-chrome-200 bg-chrome-50 px-3 py-1 text-xs text-chrome-600 hover:bg-chrome-100"
               >
                 {s}
               </button>
@@ -153,13 +175,13 @@ function CopilotInner() {
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
               placeholder="Ask your AML Agent..."
-              className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+              className="flex-1 rounded-md border border-chrome-200 px-3 py-2 text-sm"
             />
             <button
               type="button"
               onClick={() => send()}
               disabled={loading}
-              className="flex items-center gap-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="flex items-center gap-1 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
             >
               <Send className="h-4 w-4" />
               Send
@@ -174,9 +196,11 @@ function CopilotInner() {
 export default function CopilotPage() {
   return (
     <AppShell>
-      <Suspense fallback={<div className="p-6 text-gray-500">Loading copilot...</div>}>
-        <CopilotInner />
-      </Suspense>
+      <ErrorBoundary fallbackTitle="Copilot failed to render">
+        <Suspense fallback={<PageSkeleton />}>
+          <CopilotInner />
+        </Suspense>
+      </ErrorBoundary>
     </AppShell>
   );
 }

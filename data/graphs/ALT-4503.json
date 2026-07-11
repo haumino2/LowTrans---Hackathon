@@ -1,0 +1,132 @@
+{
+  "alert_id": "ALT-4503",
+  "customer_name": "Viktor Petrov",
+  "flagged_node_ids": [
+    "wallet-main",
+    "mixer-tornado",
+    "cluster-tc-adjacent"
+  ],
+  "nodes": [
+    {
+      "id": "customer-main",
+      "type": "customer",
+      "label": "Viktor Petrov",
+      "subtitle": "CUST-2290 \u00b7 Estonia",
+      "position": {
+        "x": 400,
+        "y": 50
+      },
+      "risk": "high"
+    },
+    {
+      "id": "wallet-main",
+      "type": "wallet",
+      "label": "0x8b2e...4d2c",
+      "subtitle": "Primary wallet \u00b7 3 days",
+      "position": {
+        "x": 400,
+        "y": 200
+      },
+      "risk": "high"
+    },
+    {
+      "id": "cex-coinbase",
+      "type": "counterparty",
+      "label": "Coinbase Hot Wallet",
+      "subtitle": "Known CEX",
+      "risk": "low",
+      "position": {
+        "x": 150,
+        "y": 350
+      }
+    },
+    {
+      "id": "mixer-tornado",
+      "type": "mixer",
+      "label": "Tornado Cash Pool",
+      "subtitle": "Mixer \u00b7 OFAC sanctioned",
+      "risk": "high",
+      "position": {
+        "x": 400,
+        "y": 350
+      }
+    },
+    {
+      "id": "cluster-tc-adjacent",
+      "type": "counterparty",
+      "label": "TC Adjacent Cluster",
+      "subtitle": "2-hop mixer exposure",
+      "risk": "high",
+      "position": {
+        "x": 650,
+        "y": 350
+      }
+    },
+    {
+      "id": "wallet-mule-1",
+      "type": "wallet",
+      "label": "0x3f1a...9c2d",
+      "subtitle": "Mule wallet \u00b7 12 connections",
+      "risk": "medium",
+      "position": {
+        "x": 650,
+        "y": 500
+      }
+    },
+    {
+      "id": "vasp-unknown",
+      "type": "counterparty",
+      "label": "Unknown VASP",
+      "subtitle": "Travel Rule missing",
+      "risk": "medium",
+      "position": {
+        "x": 150,
+        "y": 500
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-owns",
+      "source": "customer-main",
+      "target": "wallet-main",
+      "label": "Owns",
+      "amount_usd": null
+    },
+    {
+      "id": "e2",
+      "source": "wallet-main",
+      "target": "cex-coinbase",
+      "label": "$8,200 deposit",
+      "amount_usd": 8200
+    },
+    {
+      "id": "e3",
+      "source": "wallet-main",
+      "target": "mixer-tornado",
+      "label": "$18,400 via bridge",
+      "amount_usd": 18400
+    },
+    {
+      "id": "e4",
+      "source": "mixer-tornado",
+      "target": "cluster-tc-adjacent",
+      "label": "2-hop exposure",
+      "amount_usd": 15200
+    },
+    {
+      "id": "e5",
+      "source": "cluster-tc-adjacent",
+      "target": "wallet-mule-1",
+      "label": "$9,600 transfer",
+      "amount_usd": 9600
+    },
+    {
+      "id": "e6",
+      "source": "wallet-main",
+      "target": "vasp-unknown",
+      "label": "$52,000 withdrawal",
+      "amount_usd": 52000.0
+    }
+  ]
+}

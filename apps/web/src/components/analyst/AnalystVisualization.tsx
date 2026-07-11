@@ -47,7 +47,7 @@ export function AnalystVisualization({ data }: { data: VisualizationData }) {
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-gray-100">
                   <div
-                    className="h-full rounded-full bg-indigo-500 transition-all"
+                    className="h-full rounded-full bg-accent-muted0 transition-all"
                     style={{ width: `${Math.max((item.value / max) * 100, 4)}%` }}
                   />
                 </div>

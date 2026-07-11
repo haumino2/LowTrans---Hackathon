@@ -8,15 +8,17 @@ A hackathon-ready lite version of Sardine-style agentic compliance, built for cr
 
 ## Features
 
-- **RAG-Augmented Triage** — Retrieves similar resolved cases to justify CLEAR / REVIEW / ESCALATE decisions
+- **4-node investigation graph** — Orchestrator → Entity Identity → Financial Crime Investigator → Arbiter
+- **Agent loop** — Bedrock tool-calling with deterministic fallback
+- **Submit transaction** — Stakeholder intake → explainable ML score → full investigation
+- **RAG-Augmented Triage** — Similar resolved cases justify CLEAR / REVIEW / ESCALATE
+- **Hard policy gates** — OFAC / Travel Rule never overridden by LLM
 - **Connection Graph** — Visual wallet/transaction link tracing (mock data, illustrative only)
-- **10 AML/KYT Agents** — Transaction Monitoring, Sanctions Screening, Graph Analyst, SAR Filing, and more
 - **Sardine-Style UI** — Customer Intelligence view with risk gauge, module sidebar, case tabs
 - **Risk Insights** — VASP portfolio dashboard with activities feed
 - **Demo Mode** — One-click guided demo: reset → triage low-risk → navigate to high-risk case
 - **Analyst Override** — Approve/override agent decisions with audit-logged reasons
 - **Supervisor Approval** — ESCALATE requires supervisor approval (mock RBAC via role selector)
-- **Auto-Clear ~90%** — Batch triage with documented rationale for each decision
 - **Escalation Summaries** — Pre-drafted SAR-ready narratives for high-risk cases
 - **Audit Trail** — Immutable log of agent decisions with RAG case citations
 - **Policy Learning** — AI-suggested policy refinements from resolved case patterns
@@ -28,7 +30,15 @@ A hackathon-ready lite version of Sardine-style agentic compliance, built for cr
 ```bash
 cd apps/api
 pip install -r requirements.txt
+cp .env.example .env   # edit Bedrock key if needed
 uvicorn main:app --reload --port 8000
+```
+
+**Database (default SQLite, no Docker):** leave `DATABASE_URL` empty. On startup `init_db()` creates `data/lowtrans.db` and seeds transactions when the table is empty (`scripts/seed_db.py`). Set `USE_DB=false` only to force JSON-file fallback. Optional Postgres: set `DATABASE_URL=postgresql://...` (falls back to SQLite if unreachable).
+
+```bash
+# Re-seed manually (prints alert / case / transaction counts)
+cd apps/api && python scripts/seed_db.py
 ```
 
 API docs: http://localhost:8000/docs

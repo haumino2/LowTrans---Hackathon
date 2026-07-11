@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Clario — Agentic AML for Crypto</title>
+<style>
+  :root{
+    --ink:#0B1220; --ink-2:#111a2e;
+    --paper:#ffffff; --mist:#F6F8FB; --line:#E4E8EF;
+    --t1:#0F172A; --t2:#475569; --t3:#8A97A8;
+    --accent:#5B54E6; --accent-2:#7A73F5; --accent-muted:#EEEDFD;
+    --clear:#10B981; --review:#F59E0B; --escalate:#EF4444;
+    --radius:14px; --maxw:1120px;
+    --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--t1);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased;
+    font-variant-numeric:tabular-nums;
+  }
+  h1,h2,h3{letter-spacing:-.02em;line-height:1.1;margin:0}
+  p{margin:0}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .mono{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+  .muted{color:var(--t2)}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--t2)}
+
+  /* nav */
+  header.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+  .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800}
+  .brand small{display:block;font-size:11px;font-weight:500;color:var(--t3);letter-spacing:.02em}
+  .nav-links{display:flex;gap:26px;font-size:14px;font-weight:500;color:var(--t2)}
+  .nav-links a:hover{color:var(--t1)}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px;padding:10px 16px;border-radius:10px;border:1px solid transparent;cursor:pointer;transition:.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#4a43d6}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--t1)}
+  .btn-ghost:hover{background:var(--mist)}
+  @media(max-width:820px){.nav-links{display:none}}
+
+  /* hero */
+  .hero{position:relative;background:radial-gradient(1200px 500px at 70% -10%,rgba(122,115,245,.25),transparent),linear-gradient(180deg,var(--ink),var(--ink-2));color:#fff;overflow:hidden}
+  .hero:after{content:"";position:absolute;inset:0;background:radial-gradient(700px 300px at 15% 110%,rgba(91,84,230,.18),transparent)}
+  .hero-in{position:relative;z-index:1;padding:88px 0 76px;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+  .hero h1{font-size:52px;font-weight:800;color:#fff}
+  .hero p.lead{margin-top:20px;font-size:19px;color:#C6CEDC;max-width:560px}
+  .hero .eyebrow{color:#A9A3F7}
+  .hero-cta{margin-top:32px;display:flex;gap:12px;flex-wrap:wrap}
+  .btn-onDark{background:#fff;color:var(--ink)} .btn-onDark:hover{background:#eef}
+  .btn-outlineDark{border-color:rgba(255,255,255,.25);color:#fff} .btn-outlineDark:hover{background:rgba(255,255,255,.08)}
+  .hero-metrics{margin-top:40px;display:flex;gap:34px;flex-wrap:wrap}
+  .hero-metrics .m b{display:block;font-size:26px;font-weight:800;color:#fff}
+  .hero-metrics .m span{font-size:12.5px;color:#93A0B4}
+  @media(max-width:900px){.hero-in{grid-template-columns:1fr;padding:60px 0}.hero h1{font-size:38px}}
+
+  /* hero visual: agent pipeline card */
+  .glass{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:20px;box-shadow:0 30px 60px rgba(0,0,0,.35)}
+  .glass .row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);margin-bottom:10px}
+  .glass .row:last-child{margin-bottom:0}
+  .glass .agent{display:flex;align-items:center;gap:11px;color:#fff;font-weight:600;font-size:14px}
+  .dot{width:9px;height:9px;border-radius:50%}
+  .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
+  .b-clear{background:rgba(16,185,129,.16);color:#6EE7B7}
+  .b-esc{background:rgba(239,68,68,.16);color:#FCA5A5}
+  .b-run{background:rgba(122,115,245,.18);color:#C7C2FB}
+  .glass .verdict{margin-top:14px;padding:12px 14px;border-radius:12px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);display:flex;justify-content:space-between;align-items:center;color:#FECACA;font-weight:700;font-size:14px}
+
+  /* sections */
+  section{padding:84px 0;border-bottom:1px solid var(--line)}
+  .sec-head{max-width:720px;margin-bottom:44px}
+  .sec-head h2{font-size:34px;font-weight:800;margin-top:12px}
+  .sec-head p{margin-top:14px;font-size:17px;color:var(--t2)}
+  .center{margin-left:auto;margin-right:auto;text-align:center}
+
+  /* painpoint */
+  .pain-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .pain{background:var(--mist);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+  .pain h3{font-size:18px;margin-bottom:8px}
+  .pain .tag{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:14px;display:block}
+  .arrow{color:var(--accent);font-weight:700}
+  @media(max-width:820px){.pain-grid{grid-template-columns:1fr}}
+
+  /* pipeline */
+  .pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .node{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);position:relative}
+  .node .step{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--t3);text-transform:uppercase}
+  .node h3{font-size:16.5px;margin:8px 0 4px}
+  .node .role{font-size:12.5px;color:var(--accent);font-weight:600;margin-bottom:12px}
+  .node ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+  .node li{font-size:11.5px;font-weight:600;color:var(--t2);background:var(--mist);border:1px solid var(--line);border-radius:7px;padding:3px 8px}
+  .node li.real{color:#0f766e;background:#ecfdf5;border-color:#a7f3d0}
+  .node .desc{font-size:13px;color:var(--t2);margin:10px 0 14px}
+  @media(max-width:900px){.pipe{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.pipe{grid-template-columns:1fr}}
+  .legend{margin-top:18px;display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--t2)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .swatch{width:12px;height:12px;border-radius:3px;border:1px solid}
+
+  /* rag highlight */
+  .rag{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+  .rag .card{background:var(--ink);color:#fff;border-radius:18px;padding:26px}
+  .rag .memrow{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:13.5px}
+  .rag .memrow:last-child{border:0}
+  .rag .memrow .sim{color:#A9A3F7;font-weight:700}
+  @media(max-width:820px){.rag{grid-template-columns:1fr}}
+
+  /* features */
+  .feat{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .feature{border:1px solid var(--line);border-radius:var(--radius);padding:22px;background:var(--paper);transition:.15s}
+  .feature:hover{border-color:#cdd3f7;box-shadow:var(--shadow)}
+  .feature .ic{width:38px;height:38px;border-radius:10px;background:var(--accent-muted);color:var(--accent);display:grid;place-items:center;font-size:18px;margin-bottom:14px}
+  .feature h3{font-size:15.5px;margin-bottom:6px}
+  .feature p{font-size:13.5px;color:var(--t2)}
+  @media(max-width:900px){.feat{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.feat{grid-template-columns:1fr}}
+
+  /* comparison */
+  .cmp{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .cmp th,.cmp td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  .cmp thead th{background:var(--mist);font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--t2)}
+  .cmp thead th.us{background:var(--accent);color:#fff}
+  .cmp td.dim{font-weight:600;color:var(--t1);width:26%}
+  .cmp td.us{background:#FAFAFE;font-weight:600}
+  .yes{color:var(--clear);font-weight:700}
+  .part{color:var(--review);font-weight:700}
+  .road{color:var(--accent);font-weight:700}
+  .cmp-note{font-size:12px;color:var(--t3);margin-top:12px}
+  .cmp-scroll{overflow-x:auto}
+
+  /* stack */
+  .stack{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{font-size:13px;font-weight:600;color:var(--t1);background:var(--mist);border:1px solid var(--line);border-radius:9px;padding:8px 13px}
+  .stack-groups{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+  .stack-groups h4{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin:0 0 12px}
+  @media(max-width:820px){.stack-groups{grid-template-columns:1fr}}
+
+  /* roadmap */
+  .road-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .phase{border:1px solid var(--line);border-radius:var(--radius);padding:20px;background:var(--paper)}
+  .phase .when{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+  .phase.now{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-muted)}
+  .phase h3{font-size:15px;margin:8px 0 10px}
+  .phase ul{margin:0;padding-left:16px;font-size:13px;color:var(--t2)}
+  .phase li{margin-bottom:6px}
+  @media(max-width:900px){.road-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.road-grid{grid-template-columns:1fr}}
+
+  /* founder */
+  .founder{background:var(--mist);border:1px solid var(--line);border-radius:18px;padding:40px;max-width:820px;margin:0 auto}
+  .founder p{font-size:17px;color:var(--t1);margin-bottom:16px}
+  .founder .sig{font-weight:700;color:var(--t1)}
+
+  /* cta */
+  .cta{background:linear-gradient(135deg,var(--ink),#241f52);color:#fff;text-align:center;border:0}
+  .cta h2{font-size:34px;font-weight:800}
+  .cta p{color:#C6CEDC;margin-top:14px;font-size:17px}
+  footer{padding:34px 0;color:var(--t3);font-size:13px}
+  .footer-in{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  /* live interactive demo */
+  #live .sec-head{margin-left:auto;margin-right:auto}
+  .demo{border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);background:var(--paper)}
+  .demo-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line);background:var(--mist)}
+  .scn{font-size:13px;font-weight:600;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--t2);cursor:pointer;transition:.15s}
+  .scn:hover{border-color:#cdd3f7}
+  .scn.active{border-color:var(--accent);background:var(--accent-muted);color:var(--accent)}
+  .demo-run{margin-left:auto;display:flex;gap:8px}
+  .demo-body{display:grid;grid-template-columns:300px 1fr}
+  .demo-left{padding:22px;border-right:1px solid var(--line)}
+  .demo-right{padding:16px 22px 22px}
+  @media(max-width:820px){.demo-body{grid-template-columns:1fr}.demo-left{border-right:0;border-bottom:1px solid var(--line)}.demo-run{margin-left:0;width:100%}}
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center}
+  #dNeedle{transition:transform .8s cubic-bezier(.2,.8,.2,1);transform:rotate(-90deg);transform-origin:100px 100px}
+  .gauge-val{text-align:center;margin-top:-4px}
+  .gauge-val b{font-size:30px;font-weight:800;display:block}
+  .gauge-val span{font-size:12px;color:var(--t3);font-weight:600}
+  .subj{display:flex;gap:12px;align-items:center;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+  .subj-av{width:42px;height:42px;border-radius:50%;background:var(--accent-muted);color:var(--accent);display:grid;place-items:center;font-weight:700}
+  .subj-name{font-weight:700;font-size:15px}
+  .subj-meta{font-size:12.5px;color:var(--t2)}
+  .verdict-box{margin-top:20px;padding:16px;border-radius:12px;border:1px solid}
+  .verdict-box .vd{font-size:20px;font-weight:800}
+  .verdict-box ul{margin:10px 0 0;padding-left:18px;font-size:12.5px;color:var(--t2)}
+  .verdict-box li{margin-bottom:5px}
+  .vd-esc{background:#FEF2F2;border-color:#FECACA} .vd-esc .vd{color:var(--escalate)}
+  .vd-clear{background:#ECFDF5;border-color:#A7F3D0} .vd-clear .vd{color:var(--clear)}
+  .vd-review{background:#FFFBEB;border-color:#FDE68A} .vd-review .vd{color:var(--review)}
+  .tl-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--t2);margin-bottom:8px}
+  .tl-head b{color:var(--t1);font-size:14px}
+  .progress{height:4px;border-radius:4px;background:var(--line);overflow:hidden;margin-bottom:16px}
+  #dBar{height:100%;width:0;background:var(--accent);transition:width .4s}
+  .tl{min-height:300px}
+  .tl-hint{color:var(--t3);font-size:13px;text-align:center;padding:70px 0}
+  .tl-row{display:flex;gap:12px;padding-bottom:14px;animation:fade .3s}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+  .tl-dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700;flex:0 0 auto}
+  .tl-c{flex:1;min-width:0}
+  .tl-agent{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+  .tl-skill{font-weight:600;font-size:13.5px;margin-top:1px}
+  .tl-out{font-size:12.5px;color:var(--t2);margin-top:2px}
+  .tl-badge{font-size:10px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:5px;margin-left:6px}
+  .bg-completed{background:#ECFDF5;color:#059669} .bg-running{background:var(--accent-muted);color:var(--accent)} .bg-skipped{background:#F1F5F9;color:#94A3B8}
+  .tl-ms{font-size:11px;color:var(--t3);font-family:"SF Mono",ui-monospace,monospace;flex:0 0 auto}
+  .spin{width:12px;height:12px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* signature skills showcase */
+  .skill-showcase{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:900px){.skill-showcase{grid-template-columns:1fr}}
+  .show-card{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+  .show-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .show-tag{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+  .show-head h3{font-size:16px;margin-top:4px}
+  .btn-sm{padding:6px 12px;font-size:12.5px}
+  .show-body{padding:16px 18px;flex:1}
+  .graph-body{background:var(--mist);padding:10px}
+  .show-foot{padding:11px 18px;border-top:1px solid var(--line);font-size:12px;color:var(--t2);background:var(--mist)}
+  #gSvg{width:100%;height:auto;display:block}
+  .gnode text{font-size:11px;font-weight:600;fill:var(--t1);text-anchor:middle}
+  .gnode .sub{font-size:8.5px;fill:var(--t3);font-weight:500}
+  .gnode rect{fill:#fff;stroke:#CBD5E1;stroke-width:1.5}
+  .gnode.n-high rect{stroke:#EF4444} .gnode.n-med rect{stroke:#F59E0B} .gnode.n-low rect{stroke:#10B981}
+  .gedge{stroke:#CBD5E1;stroke-width:1.5;fill:none}
+  .gelabel{font-size:9px;fill:var(--t3);font-family:"SF Mono",monospace;text-anchor:middle}
+  .edge-flag{stroke:#EF4444;stroke-width:2.5;fill:none;stroke-dasharray:6 6;opacity:.2}
+  .tracing .edge-flag{opacity:1;animation:dash 1s linear infinite}
+  @keyframes dash{to{stroke-dashoffset:-24}}
+  .tracing .gnode.n-high rect{stroke-width:2.5;filter:drop-shadow(0 0 3px rgba(239,68,68,.5))}
+  .q-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .qchip{font-size:12px;font-weight:600;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--t2);cursor:pointer;transition:.15s}
+  .qchip.active{border-color:var(--accent);background:var(--accent-muted);color:var(--accent)}
+  .sql{background:var(--ink);color:#C6CEDC;font-family:"SF Mono",ui-monospace,monospace;font-size:11.5px;line-height:1.5;padding:12px 14px;border-radius:10px;overflow-x:auto;white-space:pre-wrap;margin:0 0 14px}
+  .sql .kw{color:#A9A3F7;font-weight:700}
+  .chart{display:flex;flex-direction:column;gap:9px}
+  .bar-row{display:grid;grid-template-columns:132px 1fr 44px;align-items:center;gap:10px;font-size:12.5px}
+  .bar-row .lbl{color:var(--t2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar-track{background:var(--mist);border-radius:6px;height:20px;overflow:hidden}
+  .bar-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:6px;transition:width .6s ease}
+  .bar-row .val{font-weight:700;font-family:"SF Mono",monospace;color:var(--t1)}
+
+  .reveal{opacity:0;transform:translateY(14px);transition:.6s ease}
+  .reveal.in{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <div class="brand">
+      <div class="logo">CL</div>
+      <div>Clario <small>Agentic AML for Crypto</small></div>
+    </div>
+    <nav class="nav-links">
+      <a href="#live">Live demo</a>
+      <a href="#problem">Problem</a>
+      <a href="#agents">Agents</a>
+      <a href="#skills-showcase">Skills</a>
+      <a href="#platform">Platform</a>
+      <a href="#compare">Compare</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#stack">Tech</a>
+    </nav>
+    <a class="btn btn-primary" href="#cta">Book a demo</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap hero-in">
+    <div>
+      <span class="eyebrow">Agentic AML &amp; KYT · Retail + Crypto</span>
+      <h1>The AI compliance analyst that actually investigates.</h1>
+      <p class="lead">Clario runs a team of AI agents that triage every transaction alert — across retail banking and crypto rails — pulling the trail, recalling similar cases, applying the right jurisdiction's policy, and handing your officer an audit-ready decision in seconds. It adapts: routine alerts fast-track, risky ones get the full investigation.</p>
+      <div class="hero-cta">
+        <a class="btn btn-onDark" href="#live">See the live demo</a>
+        <a class="btn btn-outlineDark" href="#agents">How the agents work</a>
+      </div>
+      <div class="hero-metrics">
+        <div class="m"><b>4</b><span>investigation agents</span></div>
+        <div class="m"><b>~90%</b><span>alerts auto-triaged</span></div>
+        <div class="m"><b>100%</b><span>decisions audit-logged</span></div>
+        <div class="m"><b>Sec</b><span>not hours per alert</span></div>
+      </div>
+    </div>
+    <div class="glass" aria-hidden="true">
+      <div class="row"><div class="agent"><span class="dot" style="background:#7A73F5"></span>Orchestrator · routing + RAG</div><span class="badge b-clear">done</span></div>
+      <div class="row"><div class="agent"><span class="dot" style="background:#38BDF8"></span>Entity Identity · OFAC / UBO</div><span class="badge b-clear">done</span></div>
+      <div class="row"><div class="agent"><span class="dot" style="background:#F59E0B"></span>Financial Crime · on-chain graph</div><span class="badge b-run">running</span></div>
+      <div class="row"><div class="agent"><span class="dot" style="background:#A78BFA"></span>Arbiter · decision + SAR</div><span class="badge b-esc">queued</span></div>
+      <div class="verdict"><span>FINAL DECISION · ESCALATE</span><span>94% confidence</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- LIVE INTERACTIVE DEMO -->
+<section id="live">
+  <div class="wrap">
+    <div class="sec-head center">
+      <span class="eyebrow">Live product · interactive</span>
+      <h2>Run a real investigation. Right here.</h2>
+      <p style="margin-left:auto;margin-right:auto">Pick a transaction and press run — watch Clario's four agents investigate step by step, exactly as they do in the product.</p>
+    </div>
+    <div class="demo">
+      <div class="demo-controls">
+        <span style="font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-right:2px">Scenario</span>
+        <button class="scn active" data-scn="remittance">Cross-border remittance</button>
+        <button class="scn" data-scn="salary">Salary inflow</button>
+        <button class="scn" data-scn="mixer">Mixer exposure</button>
+        <button class="scn" data-scn="sanctions">Sanctioned counterparty</button>
+        <button class="scn" data-scn="clean">Clean CEX</button>
+        <div class="demo-run">
+          <button class="btn btn-ghost" id="dReset" type="button">Reset</button>
+          <button class="btn btn-primary" id="dRun" type="button">▶ Run Agent Workflow</button>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="demo-left">
+          <div class="gauge-wrap">
+            <svg viewBox="0 0 200 118" width="220" aria-hidden="true">
+              <path d="M20 100 A80 80 0 0 1 75.3 23.9" fill="none" stroke="#10B981" stroke-width="12" stroke-linecap="round"/>
+              <path d="M75.3 23.9 A80 80 0 0 1 147 35.3" fill="none" stroke="#F59E0B" stroke-width="12" stroke-linecap="round"/>
+              <path d="M147 35.3 A80 80 0 0 1 180 100" fill="none" stroke="#EF4444" stroke-width="12" stroke-linecap="round"/>
+              <g id="dNeedle"><line x1="100" y1="100" x2="100" y2="36" stroke="#0F172A" stroke-width="3.5" stroke-linecap="round"/><circle cx="100" cy="100" r="6" fill="#0F172A"/></g>
+            </svg>
+            <div class="gauge-val"><b id="dScore">—</b><span id="dLevel">Detection KYT</span></div>
+          </div>
+          <div class="subj">
+            <div class="subj-av" id="dAv">V</div>
+            <div><div class="subj-name" id="dName">—</div><div class="subj-meta" id="dMeta">—</div></div>
+          </div>
+          <div class="verdict-box" id="dVerdict" hidden></div>
+        </div>
+        <div class="demo-right">
+          <div class="tl-head"><b>Agent Workflow</b><span id="dProg">0 steps</span></div>
+          <div class="progress"><div id="dBar"></div></div>
+          <div class="tl" id="dTimeline"></div>
+        </div>
+      </div>
+    </div>
+    <p class="cmp-note center" style="text-align:center">Interactive recreation of Clario's investigation timeline. In the live product these steps stream over SSE from the agent backend, on real on-chain data.</p>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section id="problem">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">The problem</span>
+      <h2>One alert. Hours of manual detective work.</h2>
+      <p>When a crypto transaction alert fires, an AML analyst can't just look at that one transaction. They have to reconstruct context — and it's slow, repetitive, and doesn't scale as volume explodes.</p>
+    </div>
+    <div class="pain-grid">
+      <div class="pain reveal">
+        <span class="tag">Painpoint 01 · Context</span>
+        <h3>"Have we seen this pattern before?"</h3>
+        <p class="muted">The analyst digs back through prior transactions and past cases to judge whether this is a real threat or a repeat false positive — manually, every time.</p>
+        <p style="margin-top:14px"><span class="arrow">→ Clario:</span> the <b>RAG memory</b> instantly recalls the most similar resolved cases and their outcomes, so every decision is grounded in precedent.</p>
+      </div>
+      <div class="pain reveal">
+        <span class="tag">Painpoint 02 · Regulation</span>
+        <h3>"What do the rules say, in this country?"</h3>
+        <p class="muted">Crypto regulation differs by jurisdiction and keeps changing (Travel Rule, thresholds, sanctions regimes). Analysts re-check policy by hand.</p>
+        <p style="margin-top:14px"><span class="arrow">→ Clario:</span> policy is retrieved and applied by the agents today; a dedicated <b>Regulation Agent</b> (roadmap) will check crypto law by jurisdiction automatically.</p>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:26px;max-width:780px">Why crypto first? Because the ledger is <b>public and structured</b> — a clean, verifiable substrate for an AI agent to investigate end-to-end, the perfect wedge to prove agentic compliance.</p>
+    <p class="muted" style="margin-top:12px;max-width:780px">The same agents run on <b>retail banking rails</b> — payroll, e-wallet, remittance, card — where the real pain is volume: thousands of alerts a day. Clario triages by segment and SLA, fast-tracking the routine so analysts focus only on what's risky.</p>
+  </div>
+</section>
+
+<!-- AGENTS -->
+<section id="agents">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">The solution · 4-node investigation graph</span>
+      <h2>A supervisor orchestrating four specialist agents.</h2>
+      <p>Built on a LangGraph supervisor pattern: the Orchestrator routes the case; each agent runs its own skills; a compliance Arbiter makes the call — with deterministic policy gates the AI can never override.</p>
+    </div>
+    <div class="pipe">
+      <div class="node reveal">
+        <div class="step">01 · Supervisor</div>
+        <h3>Orchestrator</h3>
+        <div class="role">Intake · routing · memory</div>
+        <p class="desc">Normalizes the alert, sets priority/SLA, and pulls precedent from memory before routing the investigation.</p>
+        <ul>
+          <li>intake-parse</li><li class="real">context-retrieve</li><li class="real">rag-lookup</li><li>sla-priority</li>
+        </ul>
+      </div>
+      <div class="node reveal">
+        <div class="step">02 · KYC / KYB</div>
+        <h3>Entity Identity</h3>
+        <div class="role">Who is behind this?</div>
+        <p class="desc">Screens the customer &amp; counterparty against sanctions/PEP, adverse media, ownership and device signals.</p>
+        <ul>
+          <li>sanctions-check</li><li>osint-research</li><li>kyb-verify</li><li>ubo-unroll</li><li>device-ip-check</li>
+        </ul>
+      </div>
+      <div class="node reveal">
+        <div class="step">03 · KYT</div>
+        <h3>Financial Crime Investigator</h3>
+        <div class="role">Follow the money</div>
+        <p class="desc">Scores the transaction, traces on-chain exposure through mixers/clusters, and detects structuring &amp; behavioral patterns.</p>
+        <ul>
+          <li class="real">ml-validate</li><li>kyt-score</li><li>travel-rule-check</li><li class="real">graph-summary</li><li>behavioral-patterns</li>
+        </ul>
+      </div>
+      <div class="node reveal">
+        <div class="step">04 · Compliance officer</div>
+        <h3>Arbiter</h3>
+        <div class="role">Decide &amp; document</div>
+        <p class="desc">Synthesizes findings into CLEAR / REVIEW / ESCALATE, drafts the SAR narrative, and compiles an immutable audit pack.</p>
+        <ul>
+          <li>confidence-score</li><li>sar-draft</li><li>audit-compile</li>
+        </ul>
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="swatch" style="background:#ecfdf5;border-color:#a7f3d0"></span> Live compute (ML / RAG / on-chain graph)</span>
+      <span><span class="swatch" style="background:var(--mist);border-color:var(--line)"></span> Skill in the investigation</span>
+      <span><b class="road">◑</b> Simulated connectors labeled in-product (real vendor integrations on roadmap)</span>
+    </div>
+  </div>
+</section>
+
+<!-- RAG -->
+<section id="rag">
+  <div class="wrap rag">
+    <div>
+      <span class="eyebrow">RAG Orchestrator</span>
+      <h2 style="font-size:32px;font-weight:800;margin-top:12px">Memory is the moat.</h2>
+      <p class="muted" style="margin-top:14px;font-size:16px">Every resolved case becomes institutional memory. When a new alert arrives, the Orchestrator retrieves the most similar prior cases — with their dispositions and analyst notes — so the agents don't investigate from zero. The more Clario runs, the sharper it gets.</p>
+      <p class="muted" style="margin-top:14px;font-size:16px">Deterministic policy gates always sit on top: a confirmed sanctions or mixer hit forces escalation regardless of what the model thinks. Explainable by design — every decision cites the signals and precedent behind it.</p>
+    </div>
+    <div class="card">
+      <div style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#A9A3F7;margin-bottom:14px">Similar cases retrieved</div>
+      <div class="memrow"><span>CASE-1205 · mixer exposure → <b style="color:#FCA5A5">ESCALATE</b></span><span class="sim">91%</span></div>
+      <div class="memrow"><span>CASE-0881 · verified CEX deposit → <b style="color:#6EE7B7">CLEAR</b></span><span class="sim">78%</span></div>
+      <div class="memrow"><span>CASE-1042 · new wallet, TR complete → <b style="color:#6EE7B7">CLEAR</b></span><span class="sim">64%</span></div>
+      <div style="margin-top:16px;font-size:13px;color:#93A0B4">Grounded decision → <b style="color:#fff">precedent-backed, not a guess.</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- PLATFORM -->
+<section id="platform">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">The platform</span>
+      <h2>Everything a compliance team needs, in one workspace.</h2>
+      <p>Not just agents — a full operational surface for VASP compliance teams.</p>
+    </div>
+    <div class="feat">
+      <div class="feature reveal"><div class="ic">▤</div><h3>Alert Queue</h3><p>Prioritized KYT/AML alerts with risk scoring and one-click investigation.</p></div>
+      <div class="feature reveal"><div class="ic">◎</div><h3>Case Workspace</h3><p>Customer intelligence, sanctions, crypto, device, travel-rule modules in one view.</p></div>
+      <div class="feature reveal"><div class="ic">⟿</div><h3>On-chain Connections Graph</h3><p>Visualize wallet flows, mixers and clusters — direct and multi-hop exposure.</p></div>
+      <div class="feature reveal"><div class="ic">⚡</div><h3>Live Agent Timeline</h3><p>Watch the four agents run step-by-step over SSE, with the final disposition.</p></div>
+      <div class="feature reveal"><div class="ic">✦</div><h3>Submit &amp; Investigate</h3><p>Push any transaction through the full agent workflow in real time.</p></div>
+      <div class="feature reveal"><div class="ic">◔</div><h3>AML Copilot</h3><p>Ask questions in natural language; the agent calls the right skill and cites tools.</p></div>
+      <div class="feature reveal"><div class="ic">▦</div><h3>Data Analyst (NL→SQL)</h3><p>Business questions become read-only SQL with charts — no analyst SQL skills needed.</p></div>
+      <div class="feature reveal"><div class="ic">◧</div><h3>Risk Insights</h3><p>Portfolio-level VASP health, approval rates and pending-alert trends.</p></div>
+      <div class="feature reveal"><div class="ic">🗎</div><h3>Audit Trail &amp; SAR</h3><p>Immutable log of every agent action and decision; SAR narratives on escalation.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<section id="compare">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Where we fit</span>
+      <h2>Analytics tools screen. Clario investigates &amp; decides.</h2>
+      <p>The market has world-class on-chain analytics and a new wave of agentic case tools. Clario sits at the intersection — agentic investigation, explainable and audit-grade, crypto-native — built for retail banks and VASPs.</p>
+    </div>
+    <div class="cmp-scroll">
+    <table class="cmp">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th class="us">Clario</th>
+          <th>Blockchain analytics<br><span class="muted" style="font-weight:400">Chainalysis · TRM · Elliptic</span></th>
+          <th>Agentic case mgmt<br><span class="muted" style="font-weight:400">Unit21 · Sardine</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="dim">Primary approach</td><td class="us">Agentic investigation + decision</td><td>On-chain data &amp; screening</td><td>Agentic case ops (fiat-first)</td></tr>
+        <tr><td class="dim">End-to-end agent investigation</td><td class="us"><span class="yes">✓ 4-agent workflow</span></td><td><span class="part">◑ analyst-driven (+AI copilots)</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td class="dim">Crypto-native on-chain graph</td><td class="us"><span class="yes">✓ core</span></td><td><span class="yes">✓ best-in-class</span></td><td><span class="part">◑ not core focus</span></td></tr>
+        <tr><td class="dim">RAG precedent memory</td><td class="us"><span class="yes">✓ learns from cases</span></td><td><span class="part">◑</span></td><td><span class="part">◑</span></td></tr>
+        <tr><td class="dim">Explainable + deterministic gates</td><td class="us"><span class="yes">✓ policy gates win over AI</span></td><td><span class="part">◑</span></td><td><span class="part">◑</span></td></tr>
+        <tr><td class="dim">Regulation-aware by jurisdiction</td><td class="us"><span class="road">◑ Regulation Agent (roadmap)</span></td><td><span class="part">◑ data feeds</span></td><td><span class="part">◑ rules</span></td></tr>
+        <tr><td class="dim">Audit-grade trail + SAR</td><td class="us"><span class="yes">✓</span></td><td><span class="part">◑</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td class="dim">Built for VASP / crypto SME</td><td class="us"><span class="yes">✓ focused</span></td><td><span class="yes">✓</span></td><td><span class="part">◑ broad</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="cmp-note">Comparison reflects each category's primary positioning, not an exhaustive feature audit. Competitors are established leaders in their domains; Clario's edge is combining agentic investigation with crypto-native data and explainability for VASPs. ◑ = partial / not primary focus · roadmap items labeled.</p>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Roadmap</span>
+      <h2>From crypto wedge to full-spectrum financial-crime intelligence.</h2>
+      <p>Crypto is the beachhead. The agent architecture generalizes to any transaction rail.</p>
+    </div>
+    <div class="road-grid">
+      <div class="phase now reveal">
+        <div class="when">Now · MVP</div>
+        <h3>Agentic crypto AML</h3>
+        <ul><li>4-agent investigation graph</li><li>On-chain exposure + graph</li><li>RAG precedent memory</li><li>Explainable decisions + audit</li></ul>
+      </div>
+      <div class="phase reveal">
+        <div class="when">Next</div>
+        <h3>Regulation Agent</h3>
+        <ul><li>Checks crypto law by country/jurisdiction</li><li>Travel Rule &amp; threshold logic per region</li><li>Auto-cites the applicable rule in the decision</li></ul>
+      </div>
+      <div class="phase reveal">
+        <div class="when">Then</div>
+        <h3>Fiat ↔ Crypto graph bridge</h3>
+        <ul><li>Map on-chain flows to traditional bank rails</li><li>Expand the investigation graph across both worlds</li><li>Follow funds beyond the ledger</li></ul>
+      </div>
+      <div class="phase reveal">
+        <div class="when">Scale</div>
+        <h3>Enterprise &amp; integrations</h3>
+        <ul><li>Live sanctions / KYB / chain-analytics vendors</li><li>Model-risk monitoring (SR 11-7 / EU AI Act)</li><li>Multi-tenant, role-based, SOC-ready</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STACK -->
+<section id="stack">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Under the hood</span>
+      <h2>A real agent stack — not a prompt wrapper.</h2>
+      <p>Production-shaped from day one: streaming agents, an explainable ML model, retrieval memory, and deterministic guardrails.</p>
+    </div>
+    <div class="stack-groups">
+      <div>
+        <h4>Agents &amp; AI</h4>
+        <div class="stack">
+          <span class="chip">LangGraph supervisor</span>
+          <span class="chip">AWS Bedrock · Amazon Nova</span>
+          <span class="chip">Cohere embeddings</span>
+          <span class="chip">RAG (vector search)</span>
+          <span class="chip">scikit-learn · Gradient Boosting</span>
+          <span class="chip">Deterministic policy gates</span>
+        </div>
+      </div>
+      <div>
+        <h4>Backend</h4>
+        <div class="stack">
+          <span class="chip">FastAPI · Python</span>
+          <span class="chip">SSE streaming</span>
+          <span class="chip">SQLite / Postgres</span>
+          <span class="chip">pgvector</span>
+          <span class="chip">Immutable audit log</span>
+        </div>
+      </div>
+      <div>
+        <h4>Frontend</h4>
+        <div class="stack">
+          <span class="chip">Next.js 14 · App Router</span>
+          <span class="chip">TypeScript</span>
+          <span class="chip">Tailwind CSS</span>
+          <span class="chip">React Flow · graph</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOUNDER -->
+<section>
+  <div class="wrap">
+    <div class="founder reveal">
+      <span class="eyebrow">Why we're building Clario</span>
+      <h2 style="font-size:26px;font-weight:800;margin:12px 0 20px">A builder's bet on agentic compliance.</h2>
+      <p>I'm not an ex-compliance PhD. I'm a builder who kept seeing the same thing: AML analysts drowning in alerts, doing hours of manual detective work per case — pulling transaction history, chasing counterparties, re-reading regulation.</p>
+      <p>We chose crypto as our first market on purpose. The blockchain is <b>public and structured</b> — the one place an AI agent can investigate with real, verifiable data instead of guesswork. It's the ideal proving ground for agentic compliance.</p>
+      <p>Clario is that proof: a team of AI agents that does the analyst's legwork end-to-end, keeps a human in control of the final call, and leaves an audit trail a regulator can trust. From here, the same agents extend across every transaction rail — starting with retail banking.</p>
+      <p class="sig">— Founder, Clario</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta" class="cta">
+  <div class="wrap">
+    <span class="eyebrow" style="color:#A9A3F7">See it live</span>
+    <h2 style="margin-top:12px">Watch four AI agents clear an alert in seconds.</h2>
+    <p>Book a walkthrough of the Clario investigation workflow — from alert to audit-ready decision.</p>
+    <div style="margin-top:28px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn-onDark" href="mailto:technical@dsquare.com.vn">Book a demo</a>
+      <a class="btn btn-outlineDark" href="#agents">Explore the agents</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-in">
+    <div class="brand"><div class="logo">CL</div><div>Clario <small>Agentic AML &amp; KYT for Crypto</small></div></div>
+    <div>© 2026 Clario · Powered by Amazon Bedrock · Built for VASP compliance teams</div>
+  </div>
+</footer>
+
+<script>
+  // scroll reveal (progressive, safe)
+  (function(){
+    var els=document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return;}
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});
+    },{threshold:.12});
+    els.forEach(function(e){io.observe(e)});
+  })();
+
+  // interactive investigation demo
+  (function(){
+    var runBtn=document.getElementById('dRun');
+    if(!runBtn) return;
+    var resetBtn=document.getElementById('dReset'),scnBtns=document.querySelectorAll('.scn');
+    var needle=document.getElementById('dNeedle'),scoreEl=document.getElementById('dScore'),levelEl=document.getElementById('dLevel');
+    var nameEl=document.getElementById('dName'),metaEl=document.getElementById('dMeta'),avEl=document.getElementById('dAv');
+    var verdict=document.getElementById('dVerdict'),tl=document.getElementById('dTimeline'),prog=document.getElementById('dProg'),bar=document.getElementById('dBar');
+    var AC={"Orchestrator":"#7A73F5","Entity Identity":"#38BDF8","Financial Crime":"#F59E0B","Arbiter":"#A78BFA"};
+    var SCN={
+      remittance:{name:"Linh Tran",av:"L",meta:"RETAIL · cross-border remittance · $7,400 (VND→USD)",kyt:46,level:"Medium",decision:"REVIEW",conf:74,
+        rationale:["Cross-border corridor + sub-threshold structuring signal","No hard policy gate → routed to analyst REVIEW","SLA: high-value retail → full investigation path"],
+        steps:[
+          ["Orchestrator","Intake Parser","Normalized alert RT-2087 · retail remittance · $7,400","completed",26],
+          ["Orchestrator","Context Retriever + RAG","2 similar remittances · 1 REVIEW (72%)","completed",110],
+          ["Orchestrator","Adaptive Router","Cross-border + mid value → FULL investigation","completed",32],
+          ["Entity Identity","Sanctions / PEP","No OFAC match · PEP clear","completed",84],
+          ["Entity Identity","OSINT Research","No adverse media [simulated]","completed",64],
+          ["Financial Crime","ML Validator","Score 46/100 · drivers: corridor_risk, amount_band","completed",56],
+          ["Financial Crime","Behavioral Engine","Sub-threshold pattern across 3 transfers","completed",30],
+          ["Arbiter","Confidence Scorer","No hard gate · ML in review band → REVIEW","completed",42],
+          ["Arbiter","Audit Compiler","Packaged 8 steps · immutable audit pack","completed",24]
+        ]},
+      salary:{name:"Marco Reyes",av:"M",meta:"RETAIL · payroll deposit · $1,850",kyt:8,level:"Low",decision:"CLEAR",conf:92,
+        rationale:["Routine payroll deposit — matches 400+ prior CLEAR cases","Adaptive Router fast-tracked: low value, no policy hit","Auto-cleared — analyst spot-check only (deep-dive skipped)"],
+        steps:[
+          ["Orchestrator","Intake Parser","Normalized alert RT-1042 · retail payroll · $1,850","completed",22],
+          ["Orchestrator","Context Retriever + RAG","Matches 400+ prior payroll deposits · all CLEAR","completed",90],
+          ["Orchestrator","Adaptive Router","Low value + payroll + no gate → FAST-TRACK","completed",30],
+          ["Entity Identity","Sanctions / PEP","No OFAC match · PEP clear","completed",78],
+          ["Financial Crime","ML Validator","Score 8/100 · no elevated risk features","completed",40],
+          ["Arbiter","Confidence Scorer","Auto-CLEAR · 92% · deep-dive skipped by router","completed",30]
+        ]},
+      mixer:{name:"Viktor Petrov",av:"V",meta:"CRYPTO · withdrawal $52,000 ETH",kyt:78,level:"High",decision:"ESCALATE",conf:94,
+        rationale:["Direct on-chain exposure to Tornado Cash pool (mixer)","Travel Rule missing on a $52,000 transfer","Hard policy gate → mandatory escalation"],
+        steps:[
+          ["Orchestrator","Intake Parser","Normalized alert ALT-3002 · session SES-4c7d2e9a","completed",28],
+          ["Orchestrator","Context Retriever + RAG","3 similar cases · CASE-1205 ESCALATE (91%)","completed",120],
+          ["Orchestrator","SLA & Priority","Priority CRITICAL · provisional ML 78/100","completed",35],
+          ["Entity Identity","Sanctions / PEP","No OFAC match · PEP clear","completed",90],
+          ["Entity Identity","OSINT Research","No adverse media [simulated]","completed",70],
+          ["Entity Identity","UBO Unroller","3-level ownership · 1 offshore node [simulated]","completed",40],
+          ["Financial Crime","ML Validator","Score 78/100 · drivers: mixer_exposure, travel_rule_gap","completed",60],
+          ["Financial Crime","On-chain Graph","Direct exposure to Tornado Cash · 3 nodes flagged","completed",140],
+          ["Financial Crime","Behavioral Engine","New-account velocity pattern detected","completed",30],
+          ["Arbiter","Confidence Scorer","Policy gate: mixer + Travel Rule missing → ESCALATE","completed",45],
+          ["Arbiter","SAR Generator","Drafted SAR narrative for escalation","completed",90],
+          ["Arbiter","Audit Compiler","Packaged 12 steps · immutable audit pack","completed",25]
+        ]},
+      sanctions:{name:"Omar Nassar",av:"O",meta:"CUST-9902 · withdrawal $4,200 BTC",kyt:72,level:"High",decision:"ESCALATE",conf:95,
+        rationale:["OFAC SDN adjacency on counterparty (87% fuzzy match)","PEP-adjacent entity in ownership tree","Confirmed sanctions hit → hard escalation"],
+        steps:[
+          ["Orchestrator","Intake Parser","Normalized alert ALT-3005 · session SES-9a2f","completed",26],
+          ["Orchestrator","Context Retriever + RAG","2 similar cases · CASE-1180 ESCALATE (84%)","completed",110],
+          ["Orchestrator","SLA & Priority","Priority CRITICAL · provisional ML 72/100","completed",33],
+          ["Entity Identity","Sanctions / PEP","OFAC SDN adjacent · 87% match · PEP hit","completed",95],
+          ["Entity Identity","OSINT Research","Adverse media: government-linked entity [simulated]","completed",80],
+          ["Entity Identity","UBO Unroller","PEP-adjacent node flagged in ownership [simulated]","completed",42],
+          ["Financial Crime","ML Validator","Score 72/100 · drivers: sanctions_proximity, pep_proximity","completed",58],
+          ["Financial Crime","On-chain Graph","Path to SDN-adjacent cluster · 3 nodes flagged","completed",130],
+          ["Financial Crime","Behavioral Engine","No structuring pattern matched","skipped",8],
+          ["Arbiter","Confidence Scorer","Hard gate: OFAC hit → ESCALATE","completed",44],
+          ["Arbiter","SAR Generator","Drafted SAR narrative for escalation","completed",88],
+          ["Arbiter","Audit Compiler","Packaged 11 steps · immutable audit pack","completed",24]
+        ]},
+      clean:{name:"Daniel Foster",av:"D",meta:"CUST-7781 · withdrawal $2,400 USDC",kyt:12,level:"Low",decision:"CLEAR",conf:88,
+        rationale:["ML score 12/100 — below review threshold","Travel Rule complete · aged wallet (420 days)","RAG precedent CASE-0881 CLEAR (78%) supports clearance"],
+        steps:[
+          ["Orchestrator","Intake Parser","Normalized alert ALT-3001 · session SES-71bd","completed",24],
+          ["Orchestrator","Context Retriever + RAG","Similar case CASE-0881 CLEAR (78%)","completed",105],
+          ["Orchestrator","SLA & Priority","Priority LOW · provisional ML 12/100","completed",30],
+          ["Entity Identity","Sanctions / PEP","No OFAC match · PEP clear","completed",86],
+          ["Entity Identity","OSINT Research","No adverse media [simulated]","completed",66],
+          ["Entity Identity","UBO Unroller","Simple ownership · no flags [simulated]","completed",38],
+          ["Financial Crime","ML Validator","Score 12/100 · no elevated risk features","completed",55],
+          ["Financial Crime","On-chain Graph","No mixer / dense graph — deep-dive skipped","skipped",5],
+          ["Financial Crime","Behavioral Engine","No behavioral pattern matched","skipped",6],
+          ["Arbiter","Confidence Scorer","ML below threshold · no policy hits → CLEAR","completed",40],
+          ["Arbiter","Audit Compiler","Packaged 10 steps · immutable audit pack","completed",22]
+        ]}
+    };
+    var cur="mixer",token=0,playing=false;
+    function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
+    function setGauge(v){needle.style.transform="rotate("+(-90+v*1.8)+"deg)";scoreEl.textContent=v}
+    function render(key){
+      token++;playing=false;cur=key;var s=SCN[key];
+      scnBtns.forEach(function(b){b.classList.toggle('active',b.getAttribute('data-scn')===key)});
+      avEl.textContent=s.av;nameEl.textContent=s.name;metaEl.textContent=s.meta;
+      levelEl.textContent="Detection KYT · "+s.level;setGauge(s.kyt);
+      verdict.hidden=true;
+      tl.innerHTML='<div class="tl-hint">Press “Run Agent Workflow” to start the investigation.</div>';
+      prog.textContent="0/"+s.steps.length+" steps";bar.style.width="0%";runBtn.disabled=false;
+    }
+    async function run(){
+      if(playing)return;var s=SCN[cur],t=++token;playing=true;runBtn.disabled=true;verdict.hidden=true;tl.innerHTML="";
+      for(var i=0;i<s.steps.length;i++){
+        if(t!==token)return;
+        var st=s.steps[i],c=AC[st[0]];
+        var row=document.createElement('div');row.className="tl-row";
+        row.innerHTML='<div class="tl-dot" style="background:'+c+'"><span class="spin"></span></div>'+
+          '<div class="tl-c"><div class="tl-agent" style="color:'+c+'">'+st[0]+'</div>'+
+          '<div class="tl-skill">'+st[1]+' <span class="tl-badge bg-running">running</span></div>'+
+          '<div class="tl-out">'+st[2]+'</div></div><div class="tl-ms"></div>';
+        tl.appendChild(row);
+        await sleep(470);if(t!==token)return;
+        var done=st[3],dot=row.querySelector('.tl-dot');
+        dot.innerHTML=done==="skipped"?"–":"✓";
+        if(done==="skipped")dot.style.background="#CBD5E1";
+        var bd=row.querySelector('.tl-badge');bd.className="tl-badge bg-"+done;bd.textContent=done;
+        row.querySelector('.tl-ms').textContent=st[4]+"ms";
+        prog.textContent=(i+1)+"/"+s.steps.length+" steps";bar.style.width=((i+1)/s.steps.length*100)+"%";
+      }
+      var cls=s.decision==="ESCALATE"?"vd-esc":(s.decision==="REVIEW"?"vd-review":"vd-clear");
+      verdict.className="verdict-box "+cls;
+      verdict.innerHTML='<div class="vd">'+s.decision+' · '+s.conf+'% confidence</div>'+
+        '<div style="font-size:12px;color:#8A97A8;margin-top:2px">Detection KYT '+s.kyt+' → agent disposition</div>'+
+        '<ul>'+s.rationale.map(function(r){return '<li>'+r+'</li>'}).join('')+'</ul>';
+      verdict.hidden=false;playing=false;runBtn.disabled=false;
+    }
+    scnBtns.forEach(function(b){b.addEventListener('click',function(){render(b.getAttribute('data-scn'))})});
+    runBtn.addEventListener('click',run);resetBtn.addEventListener('click',function(){render(cur)});
+    render('remittance');
+  })();
+</script>
+</body>
+</html>

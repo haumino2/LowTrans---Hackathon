@@ -1,92 +1,88 @@
+# LowTrans 4-node investigation graph (LangGraph pattern)
+# Agent → Skills → Tools
+
 agents:
-  - id: aml-copilot
-    name: AML Copilot
-    description: Ask your AML Agent anything — routes to the right skill
-    version: "2.0.0"
-    capabilities: [streaming, api]
-    workspace: /copilot
+  - id: orchestrator
+    name: Orchestrator
+    description: Supervisor — intake, SLA/priority, context continuity, investigation routing
+    version: "3.0.0"
+    role: supervisor
+    capabilities: [streaming, api, push]
+    # Showcase deep-link (Agents page) — single source of truth for workspace href
+    workspace: /cases/ALT-3002?tab=Timeline
     skills:
+      - intake-parse
+      - sla-priority
+      - adaptive-router
+      - context-retrieve
       - policy-qa
       - rag-lookup
-      - analyst-nl-sql
-      - sar-draft
 
-  - id: transaction-monitoring
-    name: Transaction Monitoring Agent
-    description: KYT scoring, amount thresholds, Travel Rule checks
-    version: "1.0.0"
-    capabilities: [api, push]
-    workspace: /cases
-    skills:
-      - kyt-score
-      - travel-rule-check
-
-  - id: data-analyst
-    name: Data Analyst Agent
-    description: Natural language to SQL over transaction warehouse
-    version: "1.1.0"
-    capabilities: [streaming, api]
-    workspace: /analyst
-    skills:
-      - analyst-nl-sql
-      - rule-fire-rates
-
-  - id: sanctions-screening
-    name: Sanctions Screening Agent
-    description: OFAC, PEP, adverse media screening
-    version: "1.0.0"
-    capabilities: [api]
-    workspace: /copilot
+  - id: entity-identity
+    name: Entity Identity Agent
+    description: KYC/KYB node — OFAC/PEP, OSINT, VASP registry, UBO, device/IP
+    version: "3.0.0"
+    role: identity
+    capabilities: [api, streaming]
+    workspace: /cases/ALT-3002?tab=Overview
     skills:
       - sanctions-check
-
-  - id: graph-analyst
-    name: Graph Analyst Agent
-    description: On-chain connection analysis and mixer detection
-    version: "1.0.0"
-    capabilities: [streaming, api]
-    workspace: /cases
-    skills:
-      - graph-summary
-
-  - id: sar-filing
-    name: SAR Filing Agent
-    description: Draft SAR narratives for escalated cases
-    version: "1.0.0"
-    capabilities: [streaming, api]
-    workspace: /cases
-    skills:
-      - sar-draft
-
-  - id: osint-search
-    name: OSINT Search Agent
-    description: Entity research and adverse media (mock sources)
-    version: "2.0.0"
-    capabilities: [streaming, push, api]
-    workspace: /copilot
-    skills:
       - osint-research
-
-  - id: business-due-diligence
-    name: Business Due Diligence Agent
-    description: KYB verification for VASP partners
-    version: "1.0.0"
-    capabilities: [api]
-    workspace: /copilot
-    skills:
       - kyb-verify
+      - ubo-unroll
+      - device-ip-check
 
-  - id: rule-assistant
-    name: Rule Assistant Agent
-    description: Plain-English policy to monitoring rules
-    version: "1.0.0"
-    capabilities: [streaming, api]
-    workspace: /policy
+  - id: financial-crime-investigator
+    name: Financial Crime Investigator
+    description: KYT node — scoring, Travel Rule, on-chain graph, NL-SQL, behavioral patterns
+    version: "3.0.0"
+    role: investigator
+    capabilities: [streaming, api, push]
+    workspace: /cases/ALT-3002?tab=Connections+Graph
     skills:
-      - rule-build
+      - ml-validate
+      - kyt-score
+      - travel-rule-check
+      - graph-summary
+      - analyst-nl-sql
+      - behavioral-patterns
+      - fiat-crypto-bridge
       - rule-fire-rates
 
+  - id: arbiter
+    name: Arbiter
+    description: Compliance officer — decision, confidence, SAR narrative, audit pack
+    version: "3.0.0"
+    role: arbiter
+    capabilities: [streaming, api]
+    workspace: /cases/ALT-3002?tab=Overview&sar=1
+    skills:
+      - confidence-score
+      - sar-draft
+      - rule-build
+      - audit-compile
+
 skills:
+  - id: intake-parse
+    name: Intake Parser
+    description: Normalize inbound alert / webhook payload
+    tools: [alert_reader]
+
+  - id: sla-priority
+    name: SLA & Priority Tracker
+    description: Fast-track urgent cases from initial risk signals
+    tools: [alert_reader]
+
+  - id: adaptive-router
+    name: Adaptive Router
+    description: Route investigation FAST-TRACK / STANDARD / FULL after RAG+ML+gates
+    tools: [alert_reader]
+
+  - id: context-retrieve
+    name: Context Retriever
+    description: Pull session history and similar RAG cases
+    tools: [rag_search, alert_reader]
+
   - id: policy-qa
     name: Policy Q&A
     description: Answer questions from AML policy document
@@ -97,20 +93,35 @@ skills:
     description: Find similar resolved cases from memory
     tools: [rag_search]
 
-  - id: analyst-nl-sql
-    name: NL to SQL
-    description: Convert natural language to read-only SQL
-    tools: [sql_generator, sql_runner]
+  - id: sanctions-check
+    name: Sanctions Check
+    description: OFAC / PEP / adverse media screening
+    tools: [alert_reader, screen_sanctions]
 
-  - id: rule-fire-rates
-    name: Rule Fire Rates
-    description: Compute rule trigger rates from transaction data
-    tools: [sql_runner]
+  - id: osint-research
+    name: OSINT Research
+    description: Entity research and adverse media
+    tools: [osint_search]
 
-  - id: sar-draft
-    name: SAR Narrative
-    description: Draft SAR filing narrative for escalated alerts
-    tools: [llm_writer]
+  - id: kyb-verify
+    name: KYB Verification
+    description: VASP partner due diligence registry lookup
+    tools: [kyb_registry]
+
+  - id: ubo-unroll
+    name: UBO Unroller
+    description: Recursively map corporate ownership (stub)
+    tools: [kyb_registry]
+
+  - id: device-ip-check
+    name: Device & IP Anomaly Checker
+    description: Cross-check physical identity vs digital footprint (stub)
+    tools: [alert_reader]
+
+  - id: ml-validate
+    name: ML Transaction Validator
+    description: Explainable risk model with feature attribution
+    tools: [alert_reader, ml_scorer]
 
   - id: kyt-score
     name: KYT Analysis
@@ -122,27 +133,47 @@ skills:
     description: Validate Travel Rule / IVMS101 status
     tools: [alert_reader]
 
-  - id: sanctions-check
-    name: Sanctions Check
-    description: Summarize sanctions screening results
-    tools: [alert_reader, screen_sanctions]
-
   - id: graph-summary
     name: Graph Summary
-    description: Summarize connection graph risk patterns
+    description: On-chain connection analysis and mixer detection
     tools: [graph_reader]
 
-  - id: osint-research
-    name: OSINT Research
-    description: Business and entity research report
-    tools: [osint_search]
+  - id: analyst-nl-sql
+    name: NL to SQL
+    description: Natural language to read-only SQL over warehouse
+    tools: [sql_generator, sql_runner]
 
-  - id: kyb-verify
-    name: KYB Verification
-    description: Partner and merchant due diligence
-    tools: [kyb_registry]
+  - id: behavioral-patterns
+    name: Behavioral Pattern Engine
+    description: Structuring / smurfing detection (stub)
+    tools: [alert_reader]
+
+  - id: fiat-crypto-bridge
+    name: Fiat-Crypto Bridge Tracer
+    description: Correlate bank drops with wallet funding (stub)
+    tools: [alert_reader]
+
+  - id: rule-fire-rates
+    name: Rule Fire Rates
+    description: Compute rule trigger rates from transaction data
+    tools: [sql_runner]
+
+  - id: confidence-score
+    name: Confidence Scorer
+    description: Assign probability to final disposition
+    tools: [alert_reader]
+
+  - id: sar-draft
+    name: SAR Narrative
+    description: Draft SAR filing narrative for escalated alerts
+    tools: [llm_writer]
 
   - id: rule-build
     name: Rule Building
     description: Suggest monitoring rules from policy language
     tools: [rules_compile]
+
+  - id: audit-compile
+    name: Audit Trail Compiler
+    description: Package reasoning, tool outputs, citations
+    tools: [alert_reader]

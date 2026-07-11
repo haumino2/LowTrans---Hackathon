@@ -1,0 +1,115 @@
+{
+  "alert_id": "ALT-4515",
+  "customer_name": "Lena Novak",
+  "flagged_node_ids": [
+    "wallet-main",
+    "wallet-struct-1",
+    "wallet-struct-2",
+    "wallet-struct-3"
+  ],
+  "nodes": [
+    {
+      "id": "customer-main",
+      "type": "customer",
+      "label": "Lena Novak",
+      "subtitle": "CUST-6650 \u00b7 Poland",
+      "position": {
+        "x": 400,
+        "y": 50
+      },
+      "risk": "medium"
+    },
+    {
+      "id": "wallet-main",
+      "type": "wallet",
+      "label": "TRX9aB...pQrS",
+      "subtitle": "Primary wallet \u00b7 25 days",
+      "position": {
+        "x": 400,
+        "y": 200
+      },
+      "risk": "medium"
+    },
+    {
+      "id": "cex-source",
+      "type": "counterparty",
+      "label": "On-Ramp Deposit",
+      "subtitle": "Known CEX",
+      "risk": "low",
+      "position": {
+        "x": 700,
+        "y": 200
+      }
+    },
+    {
+      "id": "wallet-struct-1",
+      "type": "wallet",
+      "label": "0xabc1...def2",
+      "subtitle": "New wallet \u00b7 2 days",
+      "risk": "medium",
+      "position": {
+        "x": 200,
+        "y": 400
+      }
+    },
+    {
+      "id": "wallet-struct-2",
+      "type": "wallet",
+      "label": "0x1234...5678",
+      "subtitle": "New wallet \u00b7 1 day",
+      "risk": "medium",
+      "position": {
+        "x": 400,
+        "y": 400
+      }
+    },
+    {
+      "id": "wallet-struct-3",
+      "type": "wallet",
+      "label": "0x9abc...0def",
+      "subtitle": "New wallet \u00b7 3 days",
+      "risk": "medium",
+      "position": {
+        "x": 600,
+        "y": 400
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-owns",
+      "source": "customer-main",
+      "target": "wallet-main",
+      "label": "Owns",
+      "amount_usd": null
+    },
+    {
+      "id": "e2",
+      "source": "cex-source",
+      "target": "wallet-main",
+      "label": "$28,500 deposit",
+      "amount_usd": 28500
+    },
+    {
+      "id": "e3",
+      "source": "wallet-main",
+      "target": "wallet-struct-1",
+      "label": "$9,500",
+      "amount_usd": 9500
+    },
+    {
+      "id": "e4",
+      "source": "wallet-main",
+      "target": "wallet-struct-2",
+      "label": "$9,200",
+      "amount_usd": 9200
+    },
+    {
+      "id": "e5",
+      "source": "wallet-main",
+      "target": "wallet-struct-3",
+      "label": "$8,900",
+      "amount_usd": 8900
+    }
+  ]
+}

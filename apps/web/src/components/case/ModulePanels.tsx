@@ -18,7 +18,7 @@ export function CustomerDetailsPanel({ alert }: { alert: Alert }) {
         <Field label="Partner ID" value={alert.partner_id} />
         <Field label="Email Address" value={alert.email} />
         <Field label="Phone" value={alert.phone} />
-        <Field label="Customer Type" value="Customer" />
+        <Field label="Customer Type" value={alert.segment || "Customer"} />
         <Field label="Account Age" value={`${alert.account_age_days} days`} />
         <Field label="Connection Graph" value={`${alert.connections}+ Direct Connections`} />
       </div>
@@ -61,15 +61,19 @@ export function RulesPanel({ alert }: { alert: Alert }) {
 }
 
 export function CryptoPanel({ alert }: { alert: Alert }) {
+  const details = alert.crypto_details || {};
   return (
     <div className="space-y-4">
       <Field label="Asset" value={`${alert.asset} on ${alert.network}`} />
       <Field label="Direction" value={alert.direction} />
       <Field label="Amount (USD)" value={`$${alert.amount_usd.toLocaleString()}`} />
-      <Field label="Wallet Address" value={alert.wallet_address.slice(0, 20) + "..."} />
+      <Field
+        label="Wallet Address"
+        value={alert.wallet_address ? `${alert.wallet_address.slice(0, 20)}...` : "—"}
+      />
       <Field label="Counterparty" value={alert.counterparty} />
       <Field label="KYT Score" value={alert.kyt_score} />
-      {Object.entries(alert.crypto_details).map(([k, v]) => (
+      {Object.entries(details).map(([k, v]) => (
         <Field key={k} label={k.replace(/_/g, " ")} value={String(v)} />
       ))}
     </div>
@@ -130,7 +134,7 @@ export function RiskCodesPanel({ alert }: { alert: Alert }) {
 export function BehaviorPanel({ alert }: { alert: Alert }) {
   return (
     <div className="space-y-4">
-      <Field label="Wallet Age" value={`${alert.signals.wallet_age_days} days`} />
+      <Field label="Wallet Age" value={`${alert.signals.wallet_age_days ?? alert.account_age_days} days`} />
       <Field label="Mixer Exposure" value={alert.signals.mixer_exposure ? "Detected" : "None"} />
       <Field label="Account Age" value={`${alert.account_age_days} days`} />
       <Field label="Connections" value={alert.connections} />
@@ -138,16 +142,83 @@ export function BehaviorPanel({ alert }: { alert: Alert }) {
   );
 }
 
+export function KycOnboardingPanel({ alert }: { alert: Alert }) {
+  return (
+    <div className="space-y-4">
+      <Field label="KYC Tier" value={alert.kyc_tier || "—"} />
+      <Field label="Verification Level" value={alert.kyc_verification_level || "—"} />
+      <Field label="Onboarding Date" value={alert.onboarding_date || "—"} />
+      <Field label="Account Age" value={`${alert.account_age_days} days`} />
+      <Field label="Country" value={alert.country} />
+    </div>
+  );
+}
+
+export function ProductsSegmentPanel({ alert }: { alert: Alert }) {
+  const mix = alert.product_mix?.length
+    ? alert.product_mix.join(", ")
+    : alert.product || "—";
+  return (
+    <div className="space-y-4">
+      <Field label="Segment" value={alert.segment || "—"} />
+      <Field label="Primary Product" value={alert.product || "—"} />
+      <Field label="Product Mix" value={mix} />
+      <Field label="Rail" value={alert.rail || "—"} />
+      <Field label="Account Age" value={`${alert.account_age_days} days`} />
+      <Field label="Partner" value={alert.partner} />
+    </div>
+  );
+}
+
+export function PriorAlertsPanel({ alert }: { alert: Alert }) {
+  const prior = alert.prior_alerts;
+  const count = prior?.count ?? 0;
+  const disposition = prior?.latest_disposition;
+  return (
+    <div className="space-y-4">
+      <Field label="Prior Alerts" value={count} />
+      <Field
+        label="Latest Disposition"
+        value={disposition ? String(disposition).toUpperCase() : "None"}
+      />
+      {prior?.latest_alert_id && (
+        <Field label="Latest Alert ID" value={String(prior.latest_alert_id)} />
+      )}
+      {prior?.latest_at && (
+        <Field label="Latest At" value={String(prior.latest_at)} />
+      )}
+      {count === 0 && (
+        <p className="text-sm text-gray-500">No prior alerts on this customer.</p>
+      )}
+    </div>
+  );
+}
+
 export function ModuleContent({ module, alert }: { module: string; alert: Alert }) {
   switch (module) {
-    case "Customer Details": return <CustomerDetailsPanel alert={alert} />;
-    case "Rules": return <RulesPanel alert={alert} />;
-    case "Risk Reason Codes": return <RiskCodesPanel alert={alert} />;
-    case "Sanctions & PEP": return <SanctionsPanel alert={alert} />;
-    case "Crypto": return <CryptoPanel alert={alert} />;
-    case "Device Signals": return <DevicePanel alert={alert} />;
-    case "Travel Rule": return <TravelRulePanel alert={alert} />;
-    case "Behavior": return <BehaviorPanel alert={alert} />;
-    default: return <CustomerDetailsPanel alert={alert} />;
+    case "Customer Details":
+      return <CustomerDetailsPanel alert={alert} />;
+    case "Rules":
+      return <RulesPanel alert={alert} />;
+    case "Risk Reason Codes":
+      return <RiskCodesPanel alert={alert} />;
+    case "Sanctions & PEP":
+      return <SanctionsPanel alert={alert} />;
+    case "Crypto":
+      return <CryptoPanel alert={alert} />;
+    case "Device Signals":
+      return <DevicePanel alert={alert} />;
+    case "Travel Rule":
+      return <TravelRulePanel alert={alert} />;
+    case "Behavior":
+      return <BehaviorPanel alert={alert} />;
+    case "KYC / Onboarding":
+      return <KycOnboardingPanel alert={alert} />;
+    case "Products & Segment":
+      return <ProductsSegmentPanel alert={alert} />;
+    case "Prior Alerts":
+      return <PriorAlertsPanel alert={alert} />;
+    default:
+      return <CustomerDetailsPanel alert={alert} />;
   }
 }

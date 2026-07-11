@@ -1,0 +1,121 @@
+{
+  "alert_id": "ALT-4504",
+  "customer_name": "Omar Nassar",
+  "flagged_node_ids": [
+    "wallet-main",
+    "sdn-adjacent",
+    "pep-entity"
+  ],
+  "nodes": [
+    {
+      "id": "customer-main",
+      "type": "customer",
+      "label": "Omar Nassar",
+      "subtitle": "CUST-9902 \u00b7 United Arab Emirates",
+      "position": {
+        "x": 400,
+        "y": 50
+      },
+      "risk": "high"
+    },
+    {
+      "id": "wallet-main",
+      "type": "wallet",
+      "label": "1A1zP1...fTL5",
+      "subtitle": "Primary wallet \u00b7 14 days",
+      "position": {
+        "x": 400,
+        "y": 200
+      },
+      "risk": "high"
+    },
+    {
+      "id": "sdn-adjacent",
+      "type": "counterparty",
+      "label": "OFAC SDN Adjacent",
+      "subtitle": "87% fuzzy match",
+      "risk": "high",
+      "position": {
+        "x": 200,
+        "y": 380
+      }
+    },
+    {
+      "id": "pep-entity",
+      "type": "counterparty",
+      "label": "PEP Adjacent Entity",
+      "subtitle": "Government-linked",
+      "risk": "high",
+      "position": {
+        "x": 600,
+        "y": 380
+      }
+    },
+    {
+      "id": "exchange-kraken",
+      "type": "counterparty",
+      "label": "Kraken Deposit",
+      "subtitle": "Known CEX",
+      "risk": "low",
+      "position": {
+        "x": 100,
+        "y": 520
+      }
+    },
+    {
+      "id": "wallet-intermediary",
+      "type": "wallet",
+      "label": "bc1q...7hguz",
+      "subtitle": "Intermediary \u00b7 2 hops",
+      "risk": "medium",
+      "position": {
+        "x": 400,
+        "y": 520
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-owns",
+      "source": "customer-main",
+      "target": "wallet-main",
+      "label": "Owns",
+      "amount_usd": null
+    },
+    {
+      "id": "e2",
+      "source": "wallet-main",
+      "target": "sdn-adjacent",
+      "label": "$4,200 transfer",
+      "amount_usd": 4200.0
+    },
+    {
+      "id": "e3",
+      "source": "wallet-main",
+      "target": "pep-entity",
+      "label": "$2,800 transfer",
+      "amount_usd": 2800
+    },
+    {
+      "id": "e4",
+      "source": "exchange-kraken",
+      "target": "wallet-main",
+      "label": "$12,000 deposit",
+      "amount_usd": 12000
+    },
+    {
+      "id": "e5",
+      "source": "wallet-main",
+      "target": "wallet-intermediary",
+      "label": "$8,500 withdrawal",
+      "amount_usd": 8500
+    },
+    {
+      "id": "e6",
+      "source": "wallet-intermediary",
+      "target": "sdn-adjacent",
+      "label": "Indirect link",
+      "amount_usd": 3100
+    }
+  ]
+}

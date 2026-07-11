@@ -1,20 +1,30 @@
 """Demo scenario presets — deterministic transactions that drive real agent output.
 
-Each scenario ships a full submit payload (identity + signals) plus an on-chain
-graph template. When a scenario is submitted, ingest.py writes the graph file so
-the OnChain_Graph_Analyzer and the Connections Graph tab light up with real data
-instead of a random, un-analyzable wallet.
+Each scenario ships a full submit payload (identity + signals). Crypto scenarios
+also have an on-chain graph template written by ingest.py so the
+OnChain_Graph_Analyzer and Connections Graph tab light up. Retail scenarios
+return no graph (rail=retail / Fiat) — triage still runs without on-chain data.
 
 Decisions are anchored by deterministic policy gates + the explainable ML scorer:
-  - clean_cex   -> CLEAR    (low amount, travel complete, aged wallet, no flags)
-  - mixer_hop   -> ESCALATE (mixer + Travel Rule missing on high-value transfer)
-  - sanctions   -> ESCALATE (OFAC hard gate)
-  - structuring -> REVIEW   (smurfing band, no hard gate)
+  Crypto:
+  - clean_cex            -> CLEAR    (low amount, travel complete, aged wallet)
+  - mixer_hop            -> ESCALATE (mixer + Travel Rule missing on high-value)
+  - sanctions            -> ESCALATE (OFAC hard gate)
+  - structuring          -> REVIEW   (smurfing band, no hard gate)
+  Retail:
+  - salary_inflow        -> CLEAR    (payroll deposit)
+  - ewallet_topup        -> CLEAR    (small top-up)
+  - remittance_highvalue -> REVIEW   (cross-border corridor, sub-threshold)
+  - merchant_payout      -> CLEAR    (SME payout)
 """
 
 from __future__ import annotations
 
 from typing import Any
+
+RETAIL_SCENARIO_IDS = frozenset(
+    {"salary_inflow", "ewallet_topup", "remittance_highvalue", "merchant_payout"}
+)
 
 
 def _short(addr: str) -> str:
@@ -51,6 +61,9 @@ SCENARIOS: list[dict[str, Any]] = [
             "sanctions_hit": False,
             "pep_hit": False,
             "risk_tags": [],
+            "segment": "vasp",
+            "product": "crypto",
+            "rail": "crypto",
         },
     },
     {
@@ -77,6 +90,9 @@ SCENARIOS: list[dict[str, Any]] = [
             "sanctions_hit": False,
             "pep_hit": False,
             "risk_tags": ["mixer_exposure", "high_risk_jurisdiction"],
+            "segment": "vasp",
+            "product": "crypto",
+            "rail": "crypto",
         },
     },
     {
@@ -103,6 +119,9 @@ SCENARIOS: list[dict[str, Any]] = [
             "sanctions_hit": True,
             "pep_hit": True,
             "risk_tags": ["sanctions_proximity"],
+            "segment": "vasp",
+            "product": "crypto",
+            "rail": "crypto",
         },
     },
     {
@@ -129,6 +148,141 @@ SCENARIOS: list[dict[str, Any]] = [
             "sanctions_hit": False,
             "pep_hit": False,
             "risk_tags": ["structuring", "high_risk_jurisdiction"],
+            "segment": "vasp",
+            "product": "crypto",
+            "rail": "crypto",
+        },
+    },
+    {
+        "id": "salary_inflow",
+        "label": "Payroll salary deposit",
+        "description": "Routine payroll credit (~$1,850) to a retail customer — no on-chain wallet.",
+        "expected_decision": "CLEAR",
+        "payload": {
+            "customer_name": "Mai Nguyen",
+            "customer_id": "CUST-R401",
+            "amount_usd": 1850,
+            "asset": "VND",
+            "network": "Fiat",
+            "direction": "deposit",
+            "counterparty": "Acme Corp Payroll",
+            "partner": "LowTrans Retail Bank",
+            "travel_rule_status": "complete",
+            "country": "Vietnam",
+            "account_age_days": 640,
+            "connections": 2,
+            "device_risk": "low",
+            "mixer_exposure": False,
+            "sanctions_hit": False,
+            "pep_hit": False,
+            "risk_tags": [],
+            "segment": "retail",
+            "product": "payroll",
+            "rail": "retail",
+            "kyc_tier": "full",
+            "kyc_verification_level": "id + liveness",
+            "product_mix": ["payroll", "ewallet"],
+            "prior_alerts": {"count": 0, "latest_disposition": None},
+        },
+    },
+    {
+        "id": "ewallet_topup",
+        "label": "E-wallet top-up",
+        "description": "Small retail e-wallet top-up — low value, aged account, no risk flags.",
+        "expected_decision": "CLEAR",
+        "payload": {
+            "customer_name": "James Okonkwo",
+            "customer_id": "CUST-R512",
+            "amount_usd": 45,
+            "asset": "USD",
+            "network": "Fiat",
+            "direction": "deposit",
+            "counterparty": "Self top-up · debit card",
+            "partner": "LowTrans Wallet",
+            "travel_rule_status": "complete",
+            "country": "United States",
+            "account_age_days": 280,
+            "connections": 1,
+            "device_risk": "low",
+            "mixer_exposure": False,
+            "sanctions_hit": False,
+            "pep_hit": False,
+            "risk_tags": [],
+            "segment": "retail",
+            "product": "ewallet",
+            "rail": "retail",
+            "kyc_tier": "basic",
+            "kyc_verification_level": "phone + id",
+            "product_mix": ["ewallet"],
+            "prior_alerts": {"count": 0, "latest_disposition": None},
+        },
+    },
+    {
+        "id": "remittance_highvalue",
+        "label": "Cross-border remittance (corridor)",
+        "description": "Sub-threshold cross-border remittance (~$7,400) on a higher-risk corridor — analyst review.",
+        "expected_decision": "REVIEW",
+        "payload": {
+            "customer_name": "Aisha Rahman",
+            "customer_id": "CUST-R628",
+            "amount_usd": 7400,
+            "asset": "USD",
+            "network": "Fiat",
+            "direction": "withdrawal",
+            "counterparty": "Family remittance · PH corridor",
+            "partner": "LowTrans Remit",
+            "travel_rule_status": "incomplete",
+            "country": "Philippines",
+            "account_age_days": 5,
+            "connections": 16,
+            "device_risk": "high",
+            "mixer_exposure": False,
+            "sanctions_hit": False,
+            "pep_hit": False,
+            "risk_tags": ["high_risk_jurisdiction", "corridor_risk"],
+            "segment": "retail",
+            "product": "remittance",
+            "rail": "retail",
+            "kyc_tier": "enhanced",
+            "kyc_verification_level": "id + sof",
+            "product_mix": ["remittance", "ewallet"],
+            "prior_alerts": {
+                "count": 2,
+                "latest_disposition": "REVIEW",
+                "latest_alert_id": "ALT-PRIOR-R628",
+            },
+        },
+    },
+    {
+        "id": "merchant_payout",
+        "label": "SME merchant payout",
+        "description": "Routine SME settlement payout — aged merchant, complete KYC, no flags.",
+        "expected_decision": "CLEAR",
+        "payload": {
+            "customer_name": "Saigon Cafe Co.",
+            "customer_id": "CUST-S902",
+            "amount_usd": 3200,
+            "asset": "VND",
+            "network": "Fiat",
+            "direction": "withdrawal",
+            "counterparty": "Merchant settlement account",
+            "partner": "LowTrans Merchant Acquiring",
+            "travel_rule_status": "complete",
+            "country": "Vietnam",
+            "account_age_days": 510,
+            "connections": 4,
+            "device_risk": "low",
+            "mixer_exposure": False,
+            "sanctions_hit": False,
+            "pep_hit": False,
+            "risk_tags": [],
+            "segment": "sme",
+            "product": "merchant",
+            "rail": "retail",
+            "kyc_tier": "full",
+            "kyc_verification_level": "kyb + ubo",
+            "product_mix": ["merchant"],
+            "prior_alerts": {"count": 1, "latest_disposition": "CLEAR"},
         },
     },
 ]
@@ -159,8 +313,16 @@ def get_scenario(scenario_id: str) -> dict[str, Any] | None:
 
 def build_scenario_graph(scenario_id: str, alert: dict[str, Any]) -> dict[str, Any] | None:
     """Construct an on-chain graph for a submitted scenario, keyed to the real
-    identity in the alert so the wallet shown matches what the user submitted."""
+    identity in the alert so the wallet shown matches what the user submitted.
+
+    Retail / Fiat scenarios have no on-chain graph — returns None (ingest skips write).
+    """
     if scenario_id not in _BY_ID:
+        return None
+    if scenario_id in RETAIL_SCENARIO_IDS:
+        return None
+    payload = (_BY_ID[scenario_id].get("payload") or {})
+    if str(payload.get("rail") or "").lower() == "retail":
         return None
 
     aid = str(alert.get("id", ""))

@@ -59,6 +59,14 @@ def _mock_sql(question: str, dialect: str | None = None) -> tuple[str, str]:
             "GROUP BY partner ORDER BY cnt DESC LIMIT 10"
         )
         expl = "Mixer exposure counts by partner (mock SQL — Bedrock unavailable)."
+    elif "segment" in q:
+        sql = (
+            "SELECT COALESCE(segment, 'unknown') AS segment, COUNT(*) AS tx_count, "
+            "SUM(amount_usd) AS total_volume, AVG(kyt_score) AS avg_kyt "
+            "FROM transactions GROUP BY COALESCE(segment, 'unknown') "
+            "ORDER BY tx_count DESC"
+        )
+        expl = "Transaction counts and volume by customer segment."
     elif "fire rate" in q or "rule" in q:
         sql = (
             "SELECT risk_level, AVG(rules_fired_count) AS avg_rules, COUNT(*) AS tx_count "

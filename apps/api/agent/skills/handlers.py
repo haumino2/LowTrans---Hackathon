@@ -376,6 +376,34 @@ def handle_sla_priority(message: str, alert_id: str | None) -> dict[str, Any]:
     }
 
 
+def handle_adaptive_router(message: str, alert_id: str | None) -> dict[str, Any]:
+    from agent.ml_scorer import score_transaction
+    from agent.policy_gates import evaluate_hard_gates
+    from agent.supervisor import ROUTE_LABELS, choose_investigation_route
+
+    alert = get_alert(alert_id) if alert_id else None
+    if not alert:
+        return {"type": "text", "reply": "Open a case for adaptive routing.", "cards": []}
+    ml = score_transaction(alert)
+    hits = evaluate_hard_gates(alert)
+    route, reason = choose_investigation_route(alert, ml, hits)
+    label = ROUTE_LABELS.get(route, route)
+    return {
+        "type": "route",
+        "reply": f"**{label}** — {reason}",
+        "cards": [
+            _card(
+                "Adaptive Router",
+                "metrics",
+                [
+                    {"label": "Route", "value": label},
+                    {"label": "ML", "value": str(ml.get("score"))},
+                ],
+            )
+        ],
+    }
+
+
 def handle_context_retrieve(message: str, alert_id: str | None) -> dict[str, Any]:
     return handle_rag_lookup(message or "similar cases", alert_id)
 
@@ -426,6 +454,7 @@ SKILL_HANDLERS: dict[str, Handler] = {
     "fiat-crypto-bridge": handle_fiat_crypto_bridge,
     "intake-parse": handle_intake_parse,
     "sla-priority": handle_sla_priority,
+    "adaptive-router": handle_adaptive_router,
     "context-retrieve": handle_context_retrieve,
     "confidence-score": handle_confidence_score,
     "audit-compile": handle_audit_compile,

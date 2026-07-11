@@ -43,11 +43,12 @@ load_dotenv()
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     if init_db():
-        from db.models import TransactionRow, get_session
+        from db.models import AlertRow, get_session
 
         session = get_session()
         try:
-            if session.query(TransactionRow).count() == 0:
+            # Empty or legacy small seed → load hero + ~488 synthetic history
+            if session.query(AlertRow).count() < 100:
                 from scripts.seed_db import seed
 
                 seed()
@@ -177,6 +178,9 @@ class SubmitTransactionRequest(BaseModel):
     pep_hit: bool = False
     device_risk: str = "low"
     risk_tags: list[str] | None = None
+    segment: str | None = None  # retail | sme | vasp
+    product: str | None = None  # payroll | ewallet | remittance | merchant | crypto
+    rail: str | None = None  # retail | crypto
     scenario_id: str | None = None
     run_triage: bool = True
 
@@ -191,9 +195,9 @@ def _role(x_role: str | None) -> str:
 
 
 def _tenant(x_tenant: str | None) -> str:
-    if x_tenant:
-        return x_tenant.strip().lower()
-    return TENANT_DEFAULT
+    from agent.policy_context import normalize_tenant
+
+    return normalize_tenant(x_tenant)
 
 
 class AnalystPreviewRequest(BaseModel):
@@ -347,7 +351,12 @@ def bedrock_chat(body: BedrockChatRequest):
 
 @app.get("/api/skills")
 def skills():
-    return {"agents": list_agents(), "skills": list_skills()}
+    from agent.supervisor import annotate_skill
+
+    return {
+        "agents": list_agents(),
+        "skills": [annotate_skill(s) for s in list_skills()],
+    }
 
 
 @app.post("/api/copilot/chat")
@@ -435,15 +444,25 @@ def scenarios():
 
 
 @app.post("/api/transactions/submit")
-def submit_tx(body: SubmitTransactionRequest, x_role: str | None = Header(default=None)):
+def submit_tx(
+    body: SubmitTransactionRequest,
+    x_role: str | None = Header(default=None),
+    x_tenant: str | None = Header(default=None),
+):
     """Stakeholder path: input tx → ML validate → 4-node investigation → queue."""
     _role(x_role)
     from agent.ingest import submit_transaction
+    from agent.policy_context import stamp_alert_policy
 
     payload = body.model_dump()
     run_triage = bool(payload.pop("run_triage", True))
     if body.risk_tags is None:
         payload["risk_tags"] = []
+    payload["_policy_tenant"] = _tenant(x_tenant)
+    # stamp fields onto payload so ingest → triage sees jurisdiction
+    stamped = stamp_alert_policy(payload, x_tenant)
+    payload["jurisdiction"] = stamped.get("jurisdiction")
+    payload["policy_version"] = stamped.get("policy_version")
     return submit_transaction(payload, run_triage=run_triage)
 
 
@@ -636,29 +655,45 @@ def get_alert_endpoint(alert_id: str):
 
 
 @app.post("/api/alerts/{alert_id}/triage")
-def triage(alert_id: str, x_role: str | None = Header(default=None)):
+def triage(
+    alert_id: str,
+    x_role: str | None = Header(default=None),
+    x_tenant: str | None = Header(default=None),
+):
     _role(x_role)
+    from agent.policy_context import stamp_alert_policy
+
     alerts = load_alerts()
     for i, a in enumerate(alerts):
         if a["id"] == alert_id:
-            result = triage_alert(a)
+            stamped = stamp_alert_policy(a, x_tenant)
+            result = triage_alert(stamped)
             decision = result["decision"].lower()
             alerts[i]["status"] = "escalate_pending" if decision == "escalate" else decision
             alerts[i]["triage_result"] = result
+            alerts[i]["jurisdiction"] = stamped.get("jurisdiction")
+            alerts[i]["policy_version"] = stamped.get("policy_version")
             save_alerts(alerts)
             return result
     raise HTTPException(404, "Alert not found")
 
 
 @app.get("/api/alerts/{alert_id}/triage/stream")
-def triage_stream(alert_id: str):
+def triage_stream(
+    alert_id: str,
+    tenant: str | None = None,
+    x_tenant: str | None = Header(default=None),
+):
+    from agent.policy_context import stamp_alert_policy
+
     alert = get_alert(alert_id)
     if not alert:
         raise HTTPException(404, "Alert not found")
+    stamped = stamp_alert_policy(alert, x_tenant or tenant)
 
     def event_gen():
         final_result = None
-        for item in stream_triage_events(alert):
+        for item in stream_triage_events(stamped):
             if item.get("event") == "complete":
                 final_result = item.get("result")
             yield f"data: {json.dumps(item)}\n\n"
@@ -669,6 +704,8 @@ def triage_stream(alert_id: str):
                     decision = final_result["decision"].lower()
                     alerts[i]["status"] = "escalate_pending" if decision == "escalate" else decision
                     alerts[i]["triage_result"] = final_result
+                    alerts[i]["jurisdiction"] = stamped.get("jurisdiction")
+                    alerts[i]["policy_version"] = stamped.get("policy_version")
                     save_alerts(alerts)
                     break
 
@@ -859,11 +896,17 @@ def audit_export(format: str = "csv"):
 
 @app.get("/api/policy")
 def policy(x_tenant: str | None = Header(default=None)):
-    tid = _tenant(x_tenant)
-    p = DATA_DIR / f"policy.{tid}.md"
-    if p.exists():
-        return {"content": p.read_text(encoding="utf-8"), "tenant": tid}
-    return {"content": (DATA_DIR / "policy.md").read_text(encoding="utf-8"), "tenant": "default"}
+    from agent.policy_context import resolve_policy
+
+    meta = resolve_policy(x_tenant)
+    return {
+        "content": meta["content"],
+        "tenant": meta["tenant"],
+        "jurisdiction": meta["jurisdiction"],
+        "policy_version": meta["policy_version"],
+        "label": meta["label"],
+        "display": meta["display"],
+    }
 
 
 @app.get("/api/policy/suggestions")

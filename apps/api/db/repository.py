@@ -199,9 +199,29 @@ def export_audit_csv() -> str:
     return "\n".join(lines)
 
 
+def _is_demo_hero(alert: dict[str, Any]) -> bool:
+    """Hero alerts used by Demo Mode — flagged at seed, or legacy ALT-3001..3012."""
+    if alert.get("demo_hero") is True:
+        return True
+    alert_id = str(alert.get("id") or "")
+    if alert_id.startswith("ALT-30") and len(alert_id) == 8:
+        # ALT-3001 … ALT-3012 (legacy JSON without demo_hero)
+        try:
+            n = int(alert_id.split("-")[1])
+            return 3001 <= n <= 3012
+        except ValueError:
+            return False
+    return False
+
+
 def reset_demo() -> int:
+    """Reset only demo hero alerts to pending; leave synthetic history intact."""
     alerts = load_alerts()
+    reset_count = 0
     for a in alerts:
+        if not _is_demo_hero(a):
+            continue
+        a["demo_hero"] = True
         a["status"] = "pending"
         a.pop("triage_result", None)
         a.pop("override", None)
@@ -212,6 +232,7 @@ def reset_demo() -> int:
         a.pop("case_state", None)
         a.pop("case_assigned_to", None)
         a.pop("case_notes", None)
+        reset_count += 1
     save_alerts(alerts)
     if is_db_ready():
         session = get_session()
@@ -224,7 +245,7 @@ def reset_demo() -> int:
         audit_path = DATA_DIR / "audit_log.jsonl"
         if audit_path.exists():
             audit_path.write_text("", encoding="utf-8")
-    return len(alerts)
+    return reset_count
 
 
 def _alert_to_tx_tuple(alert: dict[str, Any], row_id: int) -> tuple[Any, ...]:
@@ -250,6 +271,9 @@ def _alert_to_tx_tuple(alert: dict[str, Any], row_id: int) -> tuple[Any, ...]:
         len(alert.get("rules_fired") or []),
         1 if signals.get("mixer_exposure") else 0,
         1 if signals.get("sanctions_hit") else 0,
+        alert.get("segment"),
+        alert.get("product"),
+        alert.get("rail"),
         created,
     )
 
@@ -280,6 +304,9 @@ def run_sql_on_alerts_json(sql: str) -> tuple[list[str], list[list[Any]]]:
               rules_fired_count INTEGER,
               mixer_exposure INTEGER,
               sanctions_hit INTEGER,
+              segment TEXT,
+              product TEXT,
+              rail TEXT,
               created_at TEXT
             )
             """
@@ -290,8 +317,9 @@ def run_sql_on_alerts_json(sql: str) -> tuple[list[str], list[list[Any]]]:
             INSERT INTO transactions (
               id, alert_id, customer_id, customer_name, partner, asset, network,
               direction, amount_usd, kyt_score, risk_level, travel_rule_status,
-              country, rules_fired_count, mixer_exposure, sanctions_hit, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              country, rules_fired_count, mixer_exposure, sanctions_hit,
+              segment, product, rail, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             rows,
         )
@@ -340,6 +368,9 @@ TABLE transactions (
   rules_fired_count INTEGER,
   mixer_exposure {bool_type},
   sanctions_hit {bool_type},
+  segment VARCHAR,
+  product VARCHAR,
+  rail VARCHAR,
   created_at TIMESTAMP
 )
 """.strip()

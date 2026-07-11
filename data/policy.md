@@ -1,5 +1,9 @@
 # LowTrans AML/KYT Triage Policy v1.0
 
+**Jurisdiction:** default  
+**Version:** v1.0  
+**Scope:** Combined retail + crypto demo policy (fallback when no tenant selected)
+
 ## Auto-Clear Criteria (LOW risk)
 - KYT risk score < 35
 - Travel Rule payload complete and beneficiary matches

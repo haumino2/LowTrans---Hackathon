@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 Decision = Literal["CLEAR", "REVIEW", "ESCALATE"]
 Priority = Literal["critical", "high", "normal", "low"]
+Route = Literal["FAST_TRACK", "FULL", "STANDARD"]
 
 
 @dataclass
@@ -31,6 +32,11 @@ class InvestigationState:
     audit_pack: dict[str, Any] = field(default_factory=dict)
     explainability: list[dict[str, Any]] = field(default_factory=list)
     hard_escalate: bool = False
+    route: Route = "FULL"
+    route_reason: str = ""
+    hitl: bool = False
+    jurisdiction: str = "default"
+    policy_version: str = "v1.0"
 
     def add_agent(self, name: str) -> None:
         if name not in self.agents_used:
@@ -59,7 +65,9 @@ class InvestigationState:
             "escalation_summary": self.sar_draft,
             "explainability": self.explainability,
             "rag_enabled": True,
-            "policy_version": "v1.0",
+            "policy_version": self.policy_version,
+            "jurisdiction": self.jurisdiction,
+            "policy_display": f"policy: {self.jurisdiction} {self.policy_version}",
             "priority": self.priority,
             "sla_bucket": self.sla_bucket,
             "ml_score": self.ml_score,
@@ -68,6 +76,9 @@ class InvestigationState:
             "policy_hits": self.policy_hits,
             "audit_pack": self.audit_pack,
             "workflow_steps": steps,
+            "route": self.route,
+            "hitl": self.hitl,
+            "route_reason": self.route_reason,
             "workflow_summary": {
                 "total_steps": len(steps),
                 "agents_run": len(

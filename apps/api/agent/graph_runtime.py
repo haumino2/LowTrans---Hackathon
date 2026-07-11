@@ -1,4 +1,4 @@
-"""Optional LangGraph 4-node investigation runtime."""
+"""Optional LangGraph investigation runtime with adaptive conditional edges."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ class GraphState(TypedDict, total=False):
     result: dict[str, Any]
     on_step: Any
     nodes_completed: list[str]
+    route: str
 
 
 def langgraph_available() -> bool:
@@ -56,20 +57,24 @@ def run_langgraph_investigation(
                 "investigation": inv,
                 "emitter": emit,
                 "nodes_completed": [],
+                "route": "FULL",
             }
 
         def _orch(state: GraphState) -> GraphState:
             node_orchestrator(state["investigation"], state["emitter"])
             done = list(state.get("nodes_completed") or []) + ["orchestrator"]
-            return {**state, "nodes_completed": done}
+            route = getattr(state["investigation"], "route", None) or "FULL"
+            return {**state, "nodes_completed": done, "route": route}
 
         def _ident(state: GraphState) -> GraphState:
-            node_identity(state["investigation"], state["emitter"])
+            lite = (state.get("route") or getattr(state["investigation"], "route", "")) == "STANDARD"
+            node_identity(state["investigation"], state["emitter"], lite=lite)
             done = list(state.get("nodes_completed") or []) + ["entity-identity"]
             return {**state, "nodes_completed": done}
 
         def _invest(state: GraphState) -> GraphState:
-            node_investigator(state["investigation"], state["emitter"])
+            lite = (state.get("route") or getattr(state["investigation"], "route", "")) == "STANDARD"
+            node_investigator(state["investigation"], state["emitter"], lite=lite)
             done = list(state.get("nodes_completed") or []) + ["financial-crime-investigator"]
             return {**state, "nodes_completed": done}
 
@@ -81,6 +86,13 @@ def run_langgraph_investigation(
             result["graph_nodes"] = done
             return {**state, "nodes_completed": done, "result": result}
 
+        def _route_after_orch(state: GraphState) -> str:
+            """Conditional edge: FAST_TRACK skips Identity + Investigator."""
+            route = state.get("route") or getattr(state.get("investigation"), "route", None) or "FULL"
+            if route == "FAST_TRACK":
+                return "arbiter"
+            return "entity_identity"
+
         g = StateGraph(GraphState)
         g.add_node("boot", _boot)
         g.add_node("orchestrator", _orch)
@@ -89,7 +101,14 @@ def run_langgraph_investigation(
         g.add_node("arbiter", _arb)
         g.add_edge(START, "boot")
         g.add_edge("boot", "orchestrator")
-        g.add_edge("orchestrator", "entity_identity")
+        g.add_conditional_edges(
+            "orchestrator",
+            _route_after_orch,
+            {
+                "arbiter": "arbiter",
+                "entity_identity": "entity_identity",
+            },
+        )
         g.add_edge("entity_identity", "investigator")
         g.add_edge("investigator", "arbiter")
         g.add_edge("arbiter", END)

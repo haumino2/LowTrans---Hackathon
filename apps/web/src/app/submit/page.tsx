@@ -27,6 +27,9 @@ type FormState = {
   pep_hit: boolean;
   device_risk: string;
   risk_tags: string[];
+  segment: string;
+  product: string;
+  rail: string;
 };
 
 const INITIAL: FormState = {
@@ -49,6 +52,9 @@ const INITIAL: FormState = {
   pep_hit: false,
   device_risk: "low",
   risk_tags: [],
+  segment: "vasp",
+  product: "crypto",
+  rail: "crypto",
 };
 
 const DECISION_BADGE: Record<string, string> = {
@@ -109,6 +115,9 @@ export default function SubmitTransactionPage() {
       pep_hit: Boolean(p.pep_hit),
       device_risk: str(p.device_risk, "low"),
       risk_tags: Array.isArray(p.risk_tags) ? (p.risk_tags as string[]) : [],
+      segment: str(p.segment, "vasp"),
+      product: str(p.product, "crypto"),
+      rail: str(p.rail, "crypto"),
     });
   };
 
@@ -140,6 +149,9 @@ export default function SubmitTransactionPage() {
         pep_hit: form.pep_hit,
         device_risk: form.device_risk,
         risk_tags: Array.from(tags),
+        segment: form.segment || undefined,
+        product: form.product || undefined,
+        rail: form.rail || undefined,
         scenario_id: form.scenario_id || undefined,
         run_triage: true,
       });
@@ -172,7 +184,7 @@ export default function SubmitTransactionPage() {
               Stakeholder trust path — ML validate → 4-node agent investigation → queue.
             </p>
           </div>
-          <Link href="/" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
+          <Link href="/" className="text-sm font-medium text-accent hover:text-accent-hover">
             Back to queue
           </Link>
         </div>
@@ -183,11 +195,13 @@ export default function SubmitTransactionPage() {
               Start from a scenario
             </p>
             <p className="mt-1 text-xs text-gray-400">
-              Each preset carries a real wallet identity + on-chain graph, so the agents investigate real data.
+              Crypto presets include on-chain graphs; retail presets use fiat rails (no wallet).
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {scenarios.map((s) => {
                 const active = form.scenario_id === s.id;
+                const rail = String(s.payload?.rail || "crypto");
+                const isRetail = rail === "retail";
                 return (
                   <button
                     key={s.id}
@@ -195,21 +209,40 @@ export default function SubmitTransactionPage() {
                     onClick={() => applyScenario(s)}
                     className={`rounded-xl border p-4 text-left transition ${
                       active
-                        ? "border-indigo-500 bg-indigo-50 shadow-sm"
-                        : "border-gray-200 bg-white hover:border-indigo-200"
+                        ? "border-accent bg-accent-muted shadow-sm"
+                        : "border-gray-200 bg-white hover:border-chrome-200"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-semibold text-gray-900">{s.label}</span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          DECISION_BADGE[s.expected_decision] || "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {s.expected_decision}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                            isRetail
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-indigo-50 text-indigo-700"
+                          }`}
+                        >
+                          {isRetail ? "retail" : "crypto"}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            DECISION_BADGE[s.expected_decision] || "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {s.expected_decision}
+                        </span>
+                      </div>
                     </div>
                     <p className="mt-1 text-xs text-gray-500">{s.description}</p>
+                    {(Boolean(s.payload?.segment) || Boolean(s.payload?.product)) && (
+                      <p className="mt-2 text-[11px] text-gray-400">
+                        {[s.payload.segment, s.payload.product, s.payload.rail]
+                          .filter(Boolean)
+                          .map(String)
+                          .join(" · ")}
+                      </p>
+                    )}
                   </button>
                 );
               })}
@@ -218,8 +251,8 @@ export default function SubmitTransactionPage() {
                 onClick={() => applyScenario(null)}
                 className={`rounded-xl border border-dashed p-4 text-left transition ${
                   form.scenario_id === ""
-                    ? "border-indigo-400 bg-indigo-50"
-                    : "border-gray-300 bg-white hover:border-indigo-200"
+                    ? "border-accent bg-accent-muted"
+                    : "border-gray-300 bg-white hover:border-chrome-200"
                 }`}
               >
                 <span className="text-sm font-semibold text-gray-900">Manual entry</span>
@@ -249,6 +282,7 @@ export default function SubmitTransactionPage() {
                 placeholder="Auto-generated if blank (CUST-…)"
               />
             </label>
+            {form.rail !== "retail" && (
             <label className="block text-sm sm:col-span-2">
               <span className="text-gray-600">Wallet address</span>
               <input
@@ -258,6 +292,14 @@ export default function SubmitTransactionPage() {
                 placeholder="0x… / bc1… — required for on-chain graph analysis"
               />
             </label>
+            )}
+            {form.rail === "retail" && (
+              <div className="sm:col-span-2 rounded-lg border border-dashed border-chrome-200 bg-chrome-50 px-3 py-2 text-xs text-chrome-600">
+                Retail / fiat rail — no on-chain wallet. Segment{" "}
+                <strong>{form.segment || "—"}</strong> · product{" "}
+                <strong>{form.product || "—"}</strong>
+              </div>
+            )}
             <label className="block text-sm">
               <span className="text-gray-600">Partner (VASP)</span>
               <input
@@ -387,7 +429,7 @@ export default function SubmitTransactionPage() {
           <button
             type="submit"
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
             Validate with agents

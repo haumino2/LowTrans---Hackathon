@@ -18,10 +18,28 @@ def reset_via_api() -> int | None:
         return None
 
 
+def _is_demo_hero(alert: dict) -> bool:
+    if alert.get("demo_hero") is True:
+        return True
+    alert_id = str(alert.get("id") or "")
+    if alert_id.startswith("ALT-30") and len(alert_id) == 8:
+        try:
+            n = int(alert_id.split("-")[1])
+            return 3001 <= n <= 3012
+        except ValueError:
+            return False
+    return False
+
+
 def reset_json_files() -> int:
+    """Reset only hero alerts in alerts.json (synthetic history untouched if present)."""
     alerts_path = DATA / "alerts.json"
     alerts = json.loads(alerts_path.read_text(encoding="utf-8"))
+    reset_count = 0
     for a in alerts:
+        if not _is_demo_hero(a):
+            continue
+        a["demo_hero"] = True
         a["status"] = "pending"
         a.pop("triage_result", None)
         a.pop("override", None)
@@ -32,12 +50,13 @@ def reset_json_files() -> int:
         a.pop("case_state", None)
         a.pop("case_assigned_to", None)
         a.pop("case_notes", None)
+        reset_count += 1
     alerts_path.write_text(json.dumps(alerts, indent=2), encoding="utf-8")
 
     audit_path = DATA / "audit_log.jsonl"
     if audit_path.exists():
         audit_path.write_text("", encoding="utf-8")
-    return len(alerts)
+    return reset_count
 
 
 def main():

@@ -90,6 +90,9 @@ class TransactionRow(Base):
     rules_fired_count: Mapped[int] = mapped_column(Integer, default=0)
     mixer_exposure: Mapped[bool] = mapped_column(default=False)
     sanctions_hit: Mapped[bool] = mapped_column(default=False)
+    segment: Mapped[str | None] = mapped_column(String(32), nullable=True, default=None)
+    product: Mapped[str | None] = mapped_column(String(32), nullable=True, default=None)
+    rail: Mapped[str | None] = mapped_column(String(16), nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime)
 
 
@@ -112,6 +115,24 @@ def init_db() -> bool:
                     conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                     conn.commit()
             Base.metadata.create_all(eng)
+            # Best-effort add Sprint-1 columns on existing SQLite DBs
+            if candidate.startswith("sqlite"):
+                with eng.connect() as conn:
+                    cols = {
+                        r[1]
+                        for r in conn.execute(text("PRAGMA table_info(transactions)")).fetchall()
+                    }
+                    for col, ddl in (
+                        ("segment", "ALTER TABLE transactions ADD COLUMN segment VARCHAR(32)"),
+                        ("product", "ALTER TABLE transactions ADD COLUMN product VARCHAR(32)"),
+                        ("rail", "ALTER TABLE transactions ADD COLUMN rail VARCHAR(16)"),
+                    ):
+                        if col not in cols:
+                            try:
+                                conn.execute(text(ddl))
+                                conn.commit()
+                            except Exception:
+                                pass
             engine = eng
             SessionLocal = sessionmaker(bind=engine)
             _db_ready = True

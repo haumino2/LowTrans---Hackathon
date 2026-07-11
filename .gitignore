@@ -23,6 +23,11 @@ dist/
 # Local env
 .env
 .env.*
+!.env.example
+!**/.env.example
+
+# Runtime session logs (local only)
+data/copilot_sessions.jsonl
 
 # Local DB / data
 data/*.db

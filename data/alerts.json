@@ -47,7 +47,8 @@
       "chain": "Ethereum",
       "confirmations": 12,
       "gas_used": "21000"
-    }
+    },
+    "demo_hero": true
   },
   {
     "id": "ALT-3002",
@@ -116,7 +117,8 @@
       "chain": "Ethereum",
       "confirmations": 6,
       "bridge_hops": 2
-    }
+    },
+    "demo_hero": true
   },
   {
     "id": "ALT-3003",
@@ -163,7 +165,8 @@
     "crypto_details": {
       "chain": "Bitcoin",
       "confirmations": 3
-    }
+    },
+    "demo_hero": true
   },
   {
     "id": "ALT-3004",
@@ -218,7 +221,8 @@
     "crypto_details": {
       "chain": "Tron",
       "confirmations": 20
-    }
+    },
+    "demo_hero": true
   },
   {
     "id": "ALT-3005",
@@ -280,7 +284,8 @@
     "crypto_details": {
       "chain": "Bitcoin",
       "confirmations": 1
-    }
+    },
+    "demo_hero": true
   },
   {
     "id": "ALT-3006",
@@ -327,7 +332,8 @@
     "crypto_details": {
       "chain": "Solana",
       "confirmations": 32
-    }
+    },
+    "demo_hero": true
   },
   {
     "id": "ALT-3007",
@@ -383,7 +389,8 @@
     "crypto_details": {
       "chain": "Ethereum",
       "bridge_hops": 4
-    }
+    },
+    "demo_hero": true
   },
   {
     "id": "ALT-3008",
@@ -444,7 +451,8 @@
     "crypto_details": {
       "chain": "Ethereum",
       "confirmations": 15
-    }
+    },
+    "demo_hero": true
   },
   {
     "id": "ALT-3009",
@@ -491,7 +499,8 @@
     "crypto_details": {
       "chain": "Polygon",
       "confirmations": 128
-    }
+    },
+    "demo_hero": true
   },
   {
     "id": "ALT-3010",
@@ -565,7 +574,8 @@
       "chain": "Ethereum",
       "bridge_hops": 5,
       "privacy_pool": true
-    }
+    },
+    "demo_hero": true
   },
   {
     "id": "ALT-3011",
@@ -620,7 +630,8 @@
     "crypto_details": {
       "chain": "Bitcoin",
       "confirmations": 2
-    }
+    },
+    "demo_hero": true
   },
   {
     "id": "ALT-3012",
@@ -667,6 +678,7 @@
     "crypto_details": {
       "chain": "Solana",
       "confirmations": 1
-    }
+    },
+    "demo_hero": true
   }
 ]

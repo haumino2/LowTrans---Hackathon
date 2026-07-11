@@ -2,16 +2,47 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
-import { api } from "@/lib/api";
+import { api, getTenant } from "@/lib/api";
 
 export default function PolicyPage() {
   const [policy, setPolicy] = useState("");
+  const [meta, setMeta] = useState<{
+    tenant?: string;
+    jurisdiction?: string;
+    policy_version?: string;
+    label?: string;
+    display?: string;
+  }>({});
   const [suggestion, setSuggestion] = useState<Record<string, unknown> | null>(null);
+  const [tenant, setTenantState] = useState(() =>
+    typeof window !== "undefined" ? getTenant() : "vn-retail"
+  );
 
   useEffect(() => {
-    api.getPolicy().then((p) => setPolicy(p.content)).catch(() => {});
-    api.getPolicySuggestions().then(setSuggestion).catch(() => {});
+    const onTenant = (e: Event) => {
+      const next = (e as CustomEvent<string>).detail;
+      if (next) setTenantState(next);
+    };
+    window.addEventListener("clario-tenant-change", onTenant);
+    return () => window.removeEventListener("clario-tenant-change", onTenant);
   }, []);
+
+  useEffect(() => {
+    api
+      .getPolicy()
+      .then((p) => {
+        setPolicy(p.content);
+        setMeta({
+          tenant: p.tenant,
+          jurisdiction: p.jurisdiction,
+          policy_version: p.policy_version,
+          label: p.label,
+          display: p.display,
+        });
+      })
+      .catch(() => {});
+    api.getPolicySuggestions().then(setSuggestion).catch(() => {});
+  }, [tenant]);
 
   return (
     <AppShell>
@@ -19,6 +50,11 @@ export default function PolicyPage() {
         <h2 className="text-xl font-semibold text-gray-900">Policy & RAG Learning</h2>
         <p className="mt-1 text-sm text-gray-500">
           Compliance policy and AI-suggested refinements from resolved case patterns
+          {meta.display ? (
+            <span className="ml-2 rounded-md border border-chrome-200 bg-chrome-50 px-2 py-0.5 text-xs font-medium text-chrome-700">
+              {meta.display}
+            </span>
+          ) : null}
         </p>
 
         {suggestion && (
@@ -34,14 +70,22 @@ export default function PolicyPage() {
         )}
 
         <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Active Triage Policy</h3>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-gray-900">Active Triage Policy</h3>
+            {meta.label && (
+              <span className="text-xs text-gray-500">
+                {meta.label}
+                {meta.policy_version ? ` · ${meta.policy_version}` : ""}
+              </span>
+            )}
+          </div>
           <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
             {policy || "Loading policy..."}
           </pre>
         </div>
 
-        <div className="mt-6 rounded-xl border border-indigo-200 bg-white p-6">
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">How RAG Works in LowTrans</h3>
+        <div className="mt-6 rounded-xl border border-chrome-200 bg-white p-6">
+          <h3 className="text-sm font-semibold text-gray-900 mb-2">How RAG Works in Clario</h3>
           <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
             <li>Each new KYT alert is embedded as a text document (signals, tags, amounts, Travel Rule status)</li>
             <li>TF-IDF vector search retrieves top-3 similar resolved cases from 15 historical investigations</li>

@@ -21,12 +21,19 @@ export function AgentRecommendation({ result }: { result: TriageResult }) {
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide opacity-70">
-              RAG-Augmented Agent Decision
+              Agent disposition · 4-agent investigation
             </p>
             <p className="mt-1 text-2xl font-bold">{result.decision}</p>
             <p className="text-sm opacity-80">
               Confidence {(result.confidence * 100).toFixed(0)}% · {result.suggested_disposition}
             </p>
+            {(result.policy_display ||
+              (result.jurisdiction && result.policy_version)) && (
+              <p className="mt-1 text-xs font-medium opacity-70">
+                {result.policy_display ||
+                  `policy: ${result.jurisdiction} ${result.policy_version}`}
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap gap-1 justify-end max-w-xs">
             {result.agents_used.map((a) => (
@@ -59,7 +66,7 @@ export function AgentRecommendation({ result }: { result: TriageResult }) {
                 <div key={c.case_id} className="flex items-center justify-between text-sm">
                   <button
                     onClick={() => setSelectedCase(c.case_id)}
-                    className="font-mono font-medium text-indigo-700 hover:text-indigo-900 hover:underline"
+                    className="font-mono font-medium text-accent hover:text-chrome-900 hover:underline"
                   >
                     {c.case_id}
                   </button>

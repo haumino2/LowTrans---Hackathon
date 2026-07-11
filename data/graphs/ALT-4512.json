@@ -1,0 +1,74 @@
+{
+  "alert_id": "ALT-4512",
+  "customer_name": "Daniel Foster",
+  "flagged_node_ids": [],
+  "nodes": [
+    {
+      "id": "customer-main",
+      "type": "customer",
+      "label": "Daniel Foster",
+      "subtitle": "CUST-7781 \u00b7 United States",
+      "position": {
+        "x": 400,
+        "y": 50
+      },
+      "risk": "low"
+    },
+    {
+      "id": "wallet-main",
+      "type": "wallet",
+      "label": "0x7a3f...9c2d",
+      "subtitle": "Primary wallet \u00b7 420 days",
+      "position": {
+        "x": 400,
+        "y": 200
+      },
+      "risk": "low"
+    },
+    {
+      "id": "cex-coinbase",
+      "type": "counterparty",
+      "label": "Coinbase Hot Wallet",
+      "subtitle": "Known CEX",
+      "risk": "low",
+      "position": {
+        "x": 250,
+        "y": 360
+      }
+    },
+    {
+      "id": "cex-kraken",
+      "type": "counterparty",
+      "label": "Kraken Deposit",
+      "subtitle": "Known CEX",
+      "risk": "low",
+      "position": {
+        "x": 550,
+        "y": 360
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-owns",
+      "source": "customer-main",
+      "target": "wallet-main",
+      "label": "Owns",
+      "amount_usd": null
+    },
+    {
+      "id": "e2",
+      "source": "wallet-main",
+      "target": "cex-coinbase",
+      "label": "$2,400 withdrawal",
+      "amount_usd": 2400.0
+    },
+    {
+      "id": "e3",
+      "source": "cex-kraken",
+      "target": "wallet-main",
+      "label": "$1,900 prior deposit",
+      "amount_usd": 1900
+    }
+  ]
+}

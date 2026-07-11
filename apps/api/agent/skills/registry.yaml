@@ -8,10 +8,12 @@ agents:
     version: "3.0.0"
     role: supervisor
     capabilities: [streaming, api, push]
-    workspace: /copilot
+    # Showcase deep-link (Agents page) — single source of truth for workspace href
+    workspace: /cases/ALT-3002?tab=Timeline
     skills:
       - intake-parse
       - sla-priority
+      - adaptive-router
       - context-retrieve
       - policy-qa
       - rag-lookup
@@ -22,7 +24,7 @@ agents:
     version: "3.0.0"
     role: identity
     capabilities: [api, streaming]
-    workspace: /copilot
+    workspace: /cases/ALT-3002?tab=Overview
     skills:
       - sanctions-check
       - osint-research
@@ -36,7 +38,7 @@ agents:
     version: "3.0.0"
     role: investigator
     capabilities: [streaming, api, push]
-    workspace: /cases
+    workspace: /cases/ALT-3002?tab=Connections+Graph
     skills:
       - ml-validate
       - kyt-score
@@ -53,7 +55,7 @@ agents:
     version: "3.0.0"
     role: arbiter
     capabilities: [streaming, api]
-    workspace: /cases
+    workspace: /cases/ALT-3002?tab=Overview&sar=1
     skills:
       - confidence-score
       - sar-draft
@@ -69,6 +71,11 @@ skills:
   - id: sla-priority
     name: SLA & Priority Tracker
     description: Fast-track urgent cases from initial risk signals
+    tools: [alert_reader]
+
+  - id: adaptive-router
+    name: Adaptive Router
+    description: Route investigation FAST-TRACK / STANDARD / FULL after RAG+ML+gates
     tools: [alert_reader]
 
   - id: context-retrieve

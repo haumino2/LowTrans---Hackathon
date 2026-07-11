@@ -100,6 +100,6 @@ def trace_bridge(alert: dict[str, Any]) -> dict[str, Any]:
         "latency_hours_est": gap_hours,
         "matched": matched,
         "match_confidence": confidence,
-        "summary": f"{narrative} (Δ≈{gap_hours}h · {note})",
-        "source": "mock:fiat-crypto-bridge-v3",
+        "summary": f"{narrative} (Δ≈{gap_hours}h · {note}) [simulated]",
+        "source": "simulated:fiat-crypto-bridge-v3",
     }

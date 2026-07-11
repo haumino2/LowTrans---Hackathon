@@ -136,6 +136,7 @@ def unroll_ubo(entity_name: str, alert: dict[str, Any] | None = None) -> dict[st
                 if high_risk_nodes
                 else "No nested high-risk UBO flagged."
             )
+            + " [simulated]"
         ),
-        "source": "mock:ubo-unroller-v3",
+        "source": "simulated:ubo-unroller-v3",
     }

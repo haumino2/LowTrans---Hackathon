@@ -67,11 +67,17 @@ def _primary_wallet_id(nodes: list[dict[str, Any]], edges: list[dict[str, Any]])
     return None
 
 
-def _is_risk_flagged(node: dict[str, Any], origin_id: str | None) -> bool:
-    """Flagged = mixer / SDN / high-risk counterparty (not the origin wallet)."""
+def _is_risk_flagged(
+    node: dict[str, Any],
+    origin_id: str | None,
+    flagged_ids: set[str] | None = None,
+) -> bool:
+    """Flagged = listed flagged_node_ids / mixer / SDN / high-risk counterparty (not origin)."""
     nid = str(node.get("id") or "")
     if origin_id and nid == origin_id:
         return False
+    if flagged_ids and nid in flagged_ids:
+        return True
     ntype = str(node.get("type") or "").lower()
     if ntype in ("customer",):
         return False
@@ -83,6 +89,8 @@ def _is_risk_flagged(node: dict[str, Any], origin_id: str | None) -> bool:
     if "sdn" in blob or "ofac" in blob:
         return True
     if ntype == "counterparty" and str(node.get("risk") or "").lower() == "high":
+        return True
+    if str(node.get("risk") or "").lower() == "high" and ntype in ("wallet", "cluster", "entity"):
         return True
     return False
 
@@ -121,6 +129,8 @@ def compute_exposure(alert_id: str) -> dict[str, Any]:
     origin = _primary_wallet_id(nodes, edges)
     if not origin or origin not in by_id:
         return {**empty, "has_graph": True, "summary": NO_EXPOSURE_MSG}
+
+    flagged_ids = {str(x) for x in (graph.get("flagged_node_ids") or []) if x}
 
     # Undirected adjacency with edge payload for hop traversal
     adj: dict[str, list[tuple[str, dict[str, Any]]]] = {nid: [] for nid in by_id}
@@ -168,7 +178,7 @@ def compute_exposure(alert_id: str) -> dict[str, Any]:
     flagged_reached: list[str] = []
 
     for nid, node in by_id.items():
-        if nid not in dist or not _is_risk_flagged(node, origin):
+        if nid not in dist or not _is_risk_flagged(node, origin, flagged_ids):
             continue
         hops = dist[nid]
         if hops < 1:
@@ -207,7 +217,7 @@ def compute_exposure(alert_id: str) -> dict[str, Any]:
             bits.append("indirect $0")
         hop_bits = []
         for p in paths[:4]:
-            hop_bits.append(f"{p['hops']}-hop → {p['label']} (${p['amount_usd']:,.0f})")
+            hop_bits.append(f"{p['hops']}-hop -> {p['label']} (${p['amount_usd']:,.0f})")
         summary = (
             f"On-chain exposure: {'; '.join(bits)}. "
             + ("Paths: " + "; ".join(hop_bits) if hop_bits else "")

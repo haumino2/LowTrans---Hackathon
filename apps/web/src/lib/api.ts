@@ -4,6 +4,15 @@ const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
 const ROLE_KEY = "lowtrans_role";
 export const DEFAULT_ROLE = "analyst";
 
+const TENANT_KEY = "clario_tenant";
+export const DEFAULT_TENANT = "vn-retail";
+
+export const TENANTS = [
+  { value: "vn-retail", label: "VN Retail" },
+  { value: "crypto", label: "Crypto / VASP" },
+  { value: "default", label: "Default" },
+] as const;
+
 export function getRole(): string {
   if (typeof window === "undefined") return DEFAULT_ROLE;
   return localStorage.getItem(ROLE_KEY) || DEFAULT_ROLE;
@@ -13,6 +22,18 @@ export function setRole(role: string): void {
   if (typeof window !== "undefined") {
     localStorage.setItem(ROLE_KEY, role);
     window.dispatchEvent(new CustomEvent("lowtrans-role-change", { detail: role }));
+  }
+}
+
+export function getTenant(): string {
+  if (typeof window === "undefined") return DEFAULT_TENANT;
+  return localStorage.getItem(TENANT_KEY) || DEFAULT_TENANT;
+}
+
+export function setTenant(tenant: string): void {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(TENANT_KEY, tenant);
+    window.dispatchEvent(new CustomEvent("clario-tenant-change", { detail: tenant }));
   }
 }
 
@@ -38,6 +59,19 @@ export interface Alert {
   counterparty: string;
   travel_rule_status: string;
   account_age_days: number;
+  segment?: string;
+  product?: string;
+  rail?: string;
+  kyc_tier?: string;
+  kyc_verification_level?: string;
+  onboarding_date?: string;
+  product_mix?: string[];
+  prior_alerts?: {
+    count: number;
+    latest_disposition?: string | null;
+    latest_alert_id?: string | null;
+    latest_at?: string | null;
+  };
   device_os: string;
   flow_type: string;
   country: string;
@@ -50,7 +84,8 @@ export interface Alert {
   signals: Record<string, unknown>;
   rules_fired: { id: string; name: string; severity: string }[];
   sanctions_screening: { status: string; matches: number; note?: string };
-  crypto_details: Record<string, unknown>;
+  crypto_details: Record<string, unknown> | null;
+  demo_hero?: boolean;
   triage_result?: TriageResult;
   override?: { decision: string; reason: string };
 }
@@ -122,10 +157,15 @@ export interface TriageResult {
   suggested_disposition: string;
   escalation_summary: string | null;
   rag_enabled: boolean;
-  policy_version: string;
+  policy_version?: string;
+  jurisdiction?: string;
+  policy_display?: string;
   triaged_at: string;
   workflow_steps?: WorkflowStep[];
   workflow_summary?: WorkflowSummary;
+  route?: string;
+  hitl?: boolean;
+  route_reason?: string;
 }
 
 export interface Stats {
@@ -230,6 +270,8 @@ export interface Skill {
   name: string;
   description: string;
   tools: string[];
+  mode?: "triage" | "copilot";
+  conditional?: boolean;
 }
 
 export interface CopilotResponse {
@@ -284,7 +326,15 @@ export interface HealthResponse {
   rag_cases_loaded: number;
   rag_backend?: string;
   db_connected?: boolean;
-  bedrock?: Record<string, unknown>;
+  db_backend?: string;
+  bedrock?: {
+    configured?: boolean;
+    region?: string;
+    model_id?: string;
+    embed_model_id?: string;
+    token_set?: boolean;
+    [key: string]: unknown;
+  };
 }
 
 export interface Scenario {
@@ -301,6 +351,7 @@ async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
     headers: {
       "Content-Type": "application/json",
       "X-Role": getRole(),
+      "X-Tenant": getTenant(),
       ...(API_KEY ? { "X-API-Key": API_KEY } : {}),
       ...options?.headers,
     },
@@ -360,7 +411,10 @@ export const api = {
     onEvent: (data: { event: string; step?: WorkflowStep; result?: TriageResult; message?: string }) => void
   ) =>
     new Promise<TriageResult | null>((resolve, reject) => {
-      const es = new EventSource(`${API_BASE}/api/alerts/${id}/triage/stream`);
+      const tenant = encodeURIComponent(getTenant());
+      const es = new EventSource(
+        `${API_BASE}/api/alerts/${id}/triage/stream?tenant=${tenant}`
+      );
       es.onmessage = (ev) => {
         try {
           const data = JSON.parse(ev.data);
@@ -395,7 +449,15 @@ export const api = {
   getSimilar: (id: string) => fetchApi<SimilarCase[]>(`/api/alerts/${id}/similar`),
   getStats: () => fetchApi<Stats>("/api/stats"),
   getAudit: () => fetchApi<Record<string, unknown>[]>("/api/audit"),
-  getPolicy: () => fetchApi<{ content: string }>("/api/policy"),
+  getPolicy: () =>
+    fetchApi<{
+      content: string;
+      tenant: string;
+      jurisdiction?: string;
+      policy_version?: string;
+      label?: string;
+      display?: string;
+    }>("/api/policy"),
   getPolicySuggestions: () => fetchApi<Record<string, unknown>>("/api/policy/suggestions"),
   getResolvedCase: (caseId: string) => fetchApi<ResolvedCase>(`/api/cases/${caseId}`),
   getGraph: (alertId: string) => fetchApi<GraphData>(`/api/alerts/${alertId}/graph`),
@@ -447,6 +509,7 @@ export const api = {
       headers: {
         "Content-Type": "application/json",
         "X-Role": getRole(),
+        "X-Tenant": getTenant(),
         ...(API_KEY ? { "X-API-Key": API_KEY } : {}),
       },
       body: JSON.stringify({

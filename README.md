@@ -30,7 +30,15 @@ A hackathon-ready lite version of Sardine-style agentic compliance, built for cr
 ```bash
 cd apps/api
 pip install -r requirements.txt
+cp .env.example .env   # edit Bedrock key if needed
 uvicorn main:app --reload --port 8000
+```
+
+**Database (default SQLite, no Docker):** leave `DATABASE_URL` empty. On startup `init_db()` creates `data/lowtrans.db` and seeds transactions when the table is empty (`scripts/seed_db.py`). Set `USE_DB=false` only to force JSON-file fallback. Optional Postgres: set `DATABASE_URL=postgresql://...` (falls back to SQLite if unreachable).
+
+```bash
+# Re-seed manually (prints alert / case / transaction counts)
+cd apps/api && python scripts/seed_db.py
 ```
 
 API docs: http://localhost:8000/docs

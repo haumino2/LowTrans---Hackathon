@@ -1,4 +1,4 @@
-"""Workflow orchestrator — LangGraph when available, else 4-node supervisor."""
+"""Workflow orchestrator — LangGraph when available, else adaptive supervisor."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def run_workflow(
     alert: dict[str, Any],
     on_step: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
-    """Execute investigation graph; prefer LangGraph runtime when installed."""
+    """Execute adaptive investigation graph; prefer LangGraph when installed."""
     lg = run_langgraph_investigation(alert, on_step=on_step)
     if lg:
         return lg

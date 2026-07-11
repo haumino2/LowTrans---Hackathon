@@ -6,7 +6,7 @@ const TYPE_STYLES: Record<string, string> = {
   screening: "border-amber-200 bg-amber-50/50",
   graph: "border-red-200 bg-red-50/50",
   sar: "border-purple-200 bg-purple-50/50",
-  metrics: "border-indigo-200 bg-indigo-50/50",
+  metrics: "border-chrome-200 bg-accent-muted/50",
   business: "border-gray-200 bg-white",
   kyb: "border-blue-200 bg-blue-50/50",
   rule: "border-emerald-200 bg-emerald-50/50",

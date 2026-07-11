@@ -1,43 +1,53 @@
-# LowTrans — 3-Minute Hackathon Demo Script
+# LowTrans — Demo Script (4-node AML Agent Platform)
 
 ## Setup
 1. Terminal 1: `cd apps/api && pip install -r requirements.txt && uvicorn main:app --reload --port 8000`
 2. Terminal 2: `cd apps/web && npm install && npm run dev`
 3. Open http://localhost:3000
-4. Confirm **API Connected** badge in header (green) — not "Disconnected"
+4. Confirm **API Connected** badge in header (green)
+
+## Trust path — Submit a new transaction (stakeholder)
+1. Open **Submit Tx** in the nav (or `/submit`)
+2. Enter amount / counterparty; optionally toggle mixer or OFAC hit
+3. Click **Validate with agents**
+4. Show **ML feature attribution** + Arbiter decision (CLEAR / REVIEW / ESCALATE)
+5. Open case timeline — 4 nodes: Orchestrator → Entity Identity → Financial Crime Investigator → Arbiter
 
 ## Quick Demo (Demo Mode button)
 1. On **Alert Queue**, click **Demo Mode**
 2. Watch progress: resets alerts → triages ALT-3003 (Elena) → navigates to ALT-3002 (Brooke)
 3. On Brooke's case, click **Run Agent Workflow**
-4. Switch to **Connections Graph** tab — see mixer exposure graph with disclaimer banner
-5. Click a **CASE-xxx** chip in RAG results to open resolved case modal
-6. Switch role to **Supervisor** and click **Approve Escalation** (ESCALATE requires approval)
+4. Switch to **Connections Graph** tab — mixer exposure graph
+5. Switch role to **Supervisor** and click **Approve Escalation**
 
 ## Demo Flow (3 minutes)
 
 ### 1. Alert Queue (30 sec)
-- Show **12 pending KYT alerts** for crypto on/off-ramps
-- Point out stats and **API Connected** health banner
-- Optional: click **Demo Mode** for guided flow
-- Or click **Run RAG Agent on All Pending** — watch auto-clear rate hit **~75-90%**
+- Show pending KYT alerts for crypto on/off-ramps
+- Point out **4-node Agent Fleet** under Agents
+- Optional: **Submit Tx** live, or **Demo Mode**
 
 ### 2. Low-Risk Auto-Clear (45 sec)
 - Click **ALT-3003** (Elena Vasquez — low KYT, clean deposit)
-- Click **Run Agent Workflow** — watch timeline animate step-by-step:
-  - RAG Memory → Transaction Monitoring → Doc KYC → Decision → Audit
-- Show **11 workflow steps** with skipped agents (Sanctions, Graph, SAR)
-- Final: **CLEAR** with RAG citations — click CASE chip to view resolved case
+- Click **Run Agent Workflow** — timeline shows Orchestrator → Identity → Investigator → Arbiter
+- Final: **CLEAR** with RAG citations + ML score
 
 ### 3. High-Risk Escalation (60 sec)
 - Click **ALT-3002** (Brooke Ramirez — mixer + missing Travel Rule)
-- Run **Agent Workflow** — watch:
-  - RAG Memory retrieves CASE-1205
-  - Graph Analyst flags mixer exposure (nodes highlighted on graph tab)
-  - SAR Filing Agent drafts escalation summary
-- Open **Connections Graph** tab — illustrative wallet tracing
-- Use **Analyst Override** to set **REVIEW** with reason
-- Switch role to **Supervisor** and **Approve Escalation** (sets final status to ESCALATE)
+- Run workflow — hard policy gates force **ESCALATE**; Arbiter drafts SAR
+- Open **Connections Graph** tab
+- Supervisor **Approve Escalation**
+
+### 4. Copilot agent loop (30 sec)
+- Open Copilot with an alert context
+- Ask: “Validate this with ML and check sanctions”
+- Show multi-skill tool trace (Bedrock tools when configured; keyword fallback otherwise)
+
+### Stretch trust signals
+- Submit Tx shows **Sklearn GB** model name + MAE + feature attribution
+- Timeline runtime badge: `langgraph` when package installed (`LOWTRANS_USE_LANGGRAPH=0` to force supervisor)
+- UBO / Behavioral / Fiat-Crypto bridge are full mock engines (not one-liners)
+- Retrain: `cd apps/api && python scripts/train_ml_model.py`
 - Click **Replay Workflow** to re-demo the animation
 
 ### 4. Risk Insights (30 sec)

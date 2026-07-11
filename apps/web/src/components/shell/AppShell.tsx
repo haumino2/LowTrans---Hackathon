@@ -10,18 +10,19 @@ import {
   BookOpen,
   BarChart3,
   Sparkles,
+  PlusCircle,
 } from "lucide-react";
 import { API_BASE, api } from "@/lib/api";
 
 const NAV = [
   { href: "/", label: "Alert Queue", icon: LayoutList },
+  { href: "/submit", label: "Submit Tx", icon: PlusCircle },
   { href: "/insights", label: "Risk Insights", icon: BarChart3 },
   { href: "/agents", label: "Agents", icon: Bot },
   { href: "/rules", label: "Rule Builder", icon: Sparkles },
   { href: "/audit", label: "Audit Trail", icon: ScrollText },
   { href: "/policy", label: "Policy & RAG", icon: BookOpen },
 ];
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [apiConnected, setApiConnected] = useState<boolean | null>(null);

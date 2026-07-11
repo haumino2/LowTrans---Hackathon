@@ -14,7 +14,6 @@ from agent.domain.packs import (
     screening_with_policy_overlay,
 )
 from agent.tools.case_tools import read_policy
-from agent.tools.graph_tools import summarize_graph
 from agent.tools.rag_tools import find_similar_cases
 from db.repository import get_alert
 
@@ -27,20 +26,30 @@ def _card(title: str, card_type: str, fields: list[dict[str, str]]) -> dict[str,
 
 def handle_analyst_nl_sql(message: str, alert_id: str | None) -> dict[str, Any]:
     analysis = analyze_question(message)
-    if analysis.get("error") and not analysis.get("columns"):
-        return {"type": "error", "reply": analysis["error"], "cards": []}
-    viz = analysis["visualization"]
+    if analysis.get("error") and not analysis.get("visualization"):
+        return {
+            "type": "error",
+            "reply": analysis.get("error") or "Analyst query failed",
+            "cards": [],
+        }
+    viz = analysis.get("visualization")
+    if not viz:
+        return {
+            "type": "error",
+            "reply": analysis.get("error") or analysis.get("explanation") or "No visualization produced",
+            "cards": [],
+        }
     return {
         "type": "visualization",
-        "reply": viz["summary"],
+        "reply": viz.get("summary", "Query complete"),
         "visualization": viz,
         "cards": [
             _card(
                 "Query Result",
                 "metrics",
                 [
-                    {"label": "Rows", "value": str(viz["row_count"])},
-                    {"label": "Chart", "value": viz["chart_type"]},
+                    {"label": "Rows", "value": str(viz.get("row_count", 0))},
+                    {"label": "Chart", "value": str(viz.get("chart_type", "table"))},
                 ],
             )
         ],
@@ -156,23 +165,31 @@ def handle_sanctions_check(message: str, alert_id: str | None) -> dict[str, Any]
 def handle_graph_summary(message: str, alert_id: str | None) -> dict[str, Any]:
     if not alert_id:
         return {"type": "text", "reply": "Open a case for link analysis.", "cards": []}
+    # Same on-chain exposure engine as supervisor (compute_exposure), not a divergent summary.
+    from agent.tools.graph_tools import compute_exposure, summarize_graph
+
+    exposure = compute_exposure(alert_id)
     g = summarize_graph(alert_id)
+    reply = exposure.get("summary") or g.get("summary") or "Graph analysis complete."
     cards = [
         _card(
             "Link Analysis",
             "graph",
             [
-                {"label": "Nodes", "value": str(g["node_count"])},
-                {"label": "Flagged", "value": str(len(g["flagged_node_ids"]))},
+                {"label": "Nodes", "value": str(g.get("node_count", 0))},
+                {"label": "Flagged", "value": str(len(g.get("flagged_node_ids") or []))},
+                {"label": "Direct exposure", "value": f"${exposure.get('direct_exposure', 0):,.0f}"},
+                {"label": "Indirect exposure", "value": f"${exposure.get('indirect_exposure', 0):,.0f}"},
             ],
         )
     ]
     return {
         "type": "graph",
-        "reply": g["summary"],
+        "reply": reply,
         "cards": cards,
-        "flagged_node_ids": g["flagged_node_ids"],
+        "flagged_node_ids": g.get("flagged_node_ids") or [],
         "graph": g.get("graph"),
+        "exposure": exposure,
     }
 
 
@@ -223,6 +240,172 @@ def handle_rule_fire_rates(message: str, alert_id: str | None) -> dict[str, Any]
     return handle_analyst_nl_sql("rule fire rate by risk level " + message, alert_id)
 
 
+def handle_ml_validate(message: str, alert_id: str | None) -> dict[str, Any]:
+    from agent.ml_scorer import score_transaction
+
+    if not alert_id:
+        return {"type": "text", "reply": "Open a case or submit a transaction for ML validation.", "cards": []}
+    alert = get_alert(alert_id)
+    if not alert:
+        return {"type": "error", "reply": "Alert not found", "cards": []}
+    ml = score_transaction(alert)
+    fields = [
+        {"label": "Score", "value": f"{ml['score']}/100"},
+        {"label": "Risk", "value": str(ml["risk_level"]).upper()},
+        {"label": "Model", "value": ml["model"]},
+    ]
+    for a in ml.get("attribution", [])[:4]:
+        fields.append({"label": a["feature"], "value": f"+{a['contribution']}"})
+    return {
+        "type": "ml_score",
+        "reply": ml["summary"],
+        "ml_score": ml,
+        "cards": [_card("ML Transaction Validator", "metrics", fields)],
+    }
+
+
+def handle_ubo_unroll(message: str, alert_id: str | None) -> dict[str, Any]:
+    from agent.domain.ubo import unroll_ubo
+
+    alert = get_alert(alert_id) if alert_id else None
+    name = (alert or {}).get("customer_name") or message.strip() or "Unknown"
+    ubo = unroll_ubo(str(name), alert)
+    fields = [
+        {"label": "Depth", "value": str(ubo["depth"])},
+        {"label": "High-risk nodes", "value": str(len(ubo.get("high_risk_nodes") or []))},
+        {"label": "Source", "value": ubo.get("source", "mock:ubo")},
+    ]
+    for n in (ubo.get("high_risk_nodes") or [])[:3]:
+        fields.append({"label": n["name"], "value": f"{n.get('risk')} @ depth {n.get('depth')}"})
+    return {
+        "type": "ubo",
+        "reply": ubo["summary"],
+        "ubo": ubo,
+        "cards": [_card("UBO Unroller", "business", fields)],
+    }
+
+
+def handle_device_ip_check(message: str, alert_id: str | None) -> dict[str, Any]:
+    if not alert_id:
+        return {"type": "text", "reply": "Open a case for device/IP check.", "cards": []}
+    alert = get_alert(alert_id)
+    if not alert:
+        return {"type": "error", "reply": "Alert not found", "cards": []}
+    signals = alert.get("signals") or {}
+    return {
+        "type": "device",
+        "reply": (
+            f"Device risk **{signals.get('device_risk', 'low')}**; "
+            f"IP {signals.get('ip_country', alert.get('country'))}; OS {alert.get('device_os', '—')}."
+        ),
+        "cards": [
+            _card(
+                "Device & IP",
+                "metrics",
+                [
+                    {"label": "Device risk", "value": str(signals.get("device_risk", "low"))},
+                    {"label": "IP country", "value": str(signals.get("ip_country", alert.get("country", "—")))},
+                    {"label": "OS", "value": str(alert.get("device_os", "—"))},
+                ],
+            )
+        ],
+    }
+
+
+def handle_behavioral_patterns(message: str, alert_id: str | None) -> dict[str, Any]:
+    from agent.domain.behavioral import analyze_behavior
+
+    alert = get_alert(alert_id) if alert_id else None
+    if not alert:
+        return {"type": "text", "reply": "Open a case for behavioral analysis.", "cards": []}
+    behavior = analyze_behavior(alert)
+    fields = [{"label": "Patterns", "value": str(len(behavior.get("patterns") or []))}]
+    for p in behavior.get("patterns") or []:
+        fields.append({"label": p["name"], "value": p["severity"]})
+    return {
+        "type": "behavioral",
+        "reply": behavior["summary"],
+        "behavioral": behavior,
+        "cards": [_card("Behavioral Patterns", "metrics", fields)],
+    }
+
+
+def handle_fiat_crypto_bridge(message: str, alert_id: str | None) -> dict[str, Any]:
+    from agent.domain.fiat_bridge import trace_bridge
+
+    alert = get_alert(alert_id) if alert_id else None
+    if not alert:
+        return {"type": "text", "reply": "Open a case for bridge tracing.", "cards": []}
+    bridge = trace_bridge(alert)
+    fields = [
+        {"label": "Partner", "value": str(bridge.get("partner"))},
+        {"label": "Latency", "value": f"~{bridge.get('latency_hours_est')}h"},
+        {"label": "Legs", "value": str(len(bridge.get("legs") or []))},
+    ]
+    return {
+        "type": "bridge",
+        "reply": bridge["summary"],
+        "bridge": bridge,
+        "cards": [_card("Fiat-Crypto Bridge", "metrics", fields)],
+    }
+
+
+def handle_intake_parse(message: str, alert_id: str | None) -> dict[str, Any]:
+    alert = get_alert(alert_id) if alert_id else None
+    if not alert:
+        return {"type": "text", "reply": "Provide an alert_id to parse intake.", "cards": []}
+    return {
+        "type": "intake",
+        "reply": f"Intake normalized for **{alert['id']}** — {alert.get('customer_name')}, ${alert.get('amount_usd'):,.0f}.",
+        "cards": [],
+    }
+
+
+def handle_sla_priority(message: str, alert_id: str | None) -> dict[str, Any]:
+    from agent.ml_scorer import score_transaction
+
+    alert = get_alert(alert_id) if alert_id else None
+    if not alert:
+        return {"type": "text", "reply": "Open a case for SLA prioritization.", "cards": []}
+    ml = score_transaction(alert)
+    bucket = "fast-track" if ml["score"] >= 70 else ("elevated" if ml["score"] >= 40 else "routine")
+    return {
+        "type": "sla",
+        "reply": f"SLA bucket **{bucket}** based on ML {ml['score']}/100.",
+        "cards": [_card("SLA & Priority", "metrics", [{"label": "Bucket", "value": bucket}, {"label": "ML", "value": str(ml["score"])}])],
+    }
+
+
+def handle_context_retrieve(message: str, alert_id: str | None) -> dict[str, Any]:
+    return handle_rag_lookup(message or "similar cases", alert_id)
+
+
+def handle_confidence_score(message: str, alert_id: str | None) -> dict[str, Any]:
+    alert = get_alert(alert_id) if alert_id else None
+    tr = (alert or {}).get("triage_result") or {}
+    conf = tr.get("confidence", 0.7)
+    return {
+        "type": "confidence",
+        "reply": f"Confidence **{float(conf):.0%}** for decision {tr.get('decision', 'pending')}.",
+        "cards": [],
+    }
+
+
+def handle_audit_compile(message: str, alert_id: str | None) -> dict[str, Any]:
+    alert = get_alert(alert_id) if alert_id else None
+    tr = (alert or {}).get("triage_result") or {}
+    pack = tr.get("audit_pack") or {}
+    return {
+        "type": "audit",
+        "reply": (
+            f"Audit pack ready for **{alert_id}**: decision {pack.get('decision') or tr.get('decision', '—')}, "
+            f"{len(pack.get('rationale') or tr.get('rationale') or [])} rationale lines."
+        ),
+        "cards": [],
+        "audit_pack": pack,
+    }
+
+
 SKILL_HANDLERS: dict[str, Handler] = {
     "analyst-nl-sql": handle_analyst_nl_sql,
     "rag-lookup": handle_rag_lookup,
@@ -236,6 +419,16 @@ SKILL_HANDLERS: dict[str, Handler] = {
     "kyb-verify": handle_kyb_verify,
     "rule-build": handle_rule_build,
     "rule-fire-rates": handle_rule_fire_rates,
+    "ml-validate": handle_ml_validate,
+    "ubo-unroll": handle_ubo_unroll,
+    "device-ip-check": handle_device_ip_check,
+    "behavioral-patterns": handle_behavioral_patterns,
+    "fiat-crypto-bridge": handle_fiat_crypto_bridge,
+    "intake-parse": handle_intake_parse,
+    "sla-priority": handle_sla_priority,
+    "context-retrieve": handle_context_retrieve,
+    "confidence-score": handle_confidence_score,
+    "audit-compile": handle_audit_compile,
 }
 
 

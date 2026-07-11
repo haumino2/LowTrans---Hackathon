@@ -68,7 +68,11 @@ export default function CasePage() {
       setLiveResult(a.triage_result);
       setShowDecision(true);
       const graphRan = a.triage_result.workflow_steps.some(
-        (s) => s.agent === "Graph Analyst Agent" && s.status === "completed"
+        (s) =>
+          (s.agent === "Graph Analyst Agent" && s.status === "completed") ||
+          (s.agent === "Financial Crime Investigator" &&
+            !!s.input?.includes("OnChain_Graph") &&
+            s.status === "completed")
       );
       if (graphRan) {
         try {
@@ -97,13 +101,25 @@ export default function CasePage() {
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
       if (step.status !== "skipped") {
+        const doneSkills = steps
+          .slice(0, i)
+          .filter((s) => s.status === "completed" && s.skill_id)
+          .map((s) => s.skill_id as string);
         syncFromWorkflow(
           steps.slice(0, i).filter((s) => s.status === "completed").map((s) => s.agent),
-          step.agent
+          step.agent,
+          step.skill_id ?? null,
+          doneSkills
         );
       }
 
-      if (step.agent === "Graph Analyst Agent" && step.status === "completed") {
+      const isGraphStep =
+        step.skill_id === "graph-summary" ||
+        (step.agent === "Graph Analyst Agent" && step.status === "completed") ||
+        (step.agent === "Financial Crime Investigator" &&
+          !!step.input?.includes("OnChain_Graph") &&
+          step.status === "completed");
+      if (isGraphStep) {
         try {
           const graph = await api.getGraph(alertId);
           setGraphHighlight(graph.flagged_node_ids);
@@ -124,8 +140,14 @@ export default function CasePage() {
       setVisibleSteps(steps.slice(0, i + 1));
     }
 
+    const finalSkills = steps
+      .filter((s) => s.status === "completed" && s.skill_id)
+      .map((s) => s.skill_id as string);
     syncFromWorkflow(
-      steps.filter((s) => s.status === "completed").map((s) => s.agent)
+      steps.filter((s) => s.status === "completed").map((s) => s.agent),
+      undefined,
+      null,
+      finalSkills
     );
     setLiveResult(result);
     setShowDecision(true);
@@ -143,16 +165,29 @@ export default function CasePage() {
 
     try {
       const completedAgents: string[] = [];
+      const completedSkills: string[] = [];
       const result = await api.triageStream(alertId, (data) => {
         if (data.event === "step" && data.step) {
           const step = data.step;
           if (step.status === "completed") {
             completedAgents.push(step.agent);
+            if (step.skill_id) completedSkills.push(step.skill_id);
           }
           if (step.status !== "skipped") {
-            syncFromWorkflow([...completedAgents], step.status === "running" ? step.agent : undefined);
+            syncFromWorkflow(
+              [...completedAgents],
+              step.status === "running" ? step.agent : undefined,
+              step.status === "running" || step.status === "completed" ? step.skill_id ?? null : null,
+              [...completedSkills]
+            );
           }
-          if (step.agent === "Graph Analyst Agent" && step.status === "completed") {
+          if (
+            step.skill_id === "graph-summary" ||
+            (step.agent === "Graph Analyst Agent" && step.status === "completed") ||
+            (step.agent === "Financial Crime Investigator" &&
+              !!step.input?.includes("OnChain_Graph") &&
+              step.status === "completed")
+          ) {
             api.getGraph(alertId).then((g) => setGraphHighlight(g.flagged_node_ids)).catch(() => null);
           }
           setAllSteps((prev) => {
@@ -175,8 +210,14 @@ export default function CasePage() {
         setVisibleSteps(result.workflow_steps ?? []);
         setLiveResult(result);
         setShowDecision(true);
+        const finalSkills = (result.workflow_steps ?? [])
+          .filter((s) => s.status === "completed" && s.skill_id)
+          .map((s) => s.skill_id as string);
         syncFromWorkflow(
-          (result.workflow_steps ?? []).filter((s) => s.status === "completed").map((s) => s.agent)
+          (result.workflow_steps ?? []).filter((s) => s.status === "completed").map((s) => s.agent),
+          undefined,
+          null,
+          finalSkills
         );
         await load();
       }

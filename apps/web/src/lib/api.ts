@@ -79,6 +79,7 @@ export interface CasePacket extends CaseSummary {
 export interface WorkflowStep {
   step: number;
   agent: string;
+  skill_id?: string | null;
   status: "completed" | "skipped" | "running" | "pending";
   input: string;
   output: string;
@@ -286,6 +287,14 @@ export interface HealthResponse {
   bedrock?: Record<string, unknown>;
 }
 
+export interface Scenario {
+  id: string;
+  label: string;
+  description: string;
+  expected_decision: string;
+  payload: Record<string, unknown>;
+}
+
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -328,6 +337,23 @@ export const api = {
     }),
   getApprovals: () => fetchApi<Alert[]>("/api/approvals"),
   getAlert: (id: string) => fetchApi<Alert>(`/api/alerts/${id}`),
+  submitTransaction: (body: Record<string, unknown>) =>
+    fetchApi<{
+      ok: boolean;
+      alert: Alert;
+      ml_score?: {
+        score: number;
+        risk_level: string;
+        summary: string;
+        attribution: { feature: string; contribution: number }[];
+        model: string;
+      };
+      triage_result?: TriageResult;
+    }>("/api/transactions/submit", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  getScenarios: () => fetchApi<{ scenarios: Scenario[] }>("/api/scenarios"),
   triage: (id: string) => fetchApi<TriageResult>(`/api/alerts/${id}/triage`, { method: "POST" }),
   triageStream: (
     id: string,

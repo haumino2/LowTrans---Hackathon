@@ -14,8 +14,8 @@ def generate_sql(question: str) -> dict[str, Any]:
 
 
 def run_sql(sql: str) -> dict[str, Any]:
-    columns, rows = run_analyst_query(sql)
-    return {"columns": columns, "rows": rows, "row_count": len(rows)}
+    """Execute read-only SQL; returns the analyst result dict as-is."""
+    return run_analyst_query(sql)
 
 
 def explain_sql(question: str) -> dict[str, Any]:

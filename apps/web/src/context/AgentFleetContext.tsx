@@ -10,25 +10,27 @@ export interface AgentState {
   lastRun?: string;
 }
 
-const DEFAULT_AGENTS = [
-  "Transaction Monitoring Agent",
-  "Sanctions Screening Agent",
-  "Doc KYC Agent",
-  "Graph Analyst Agent",
-  "Data Analyst Agent",
-  "OSINT Search Agent",
-  "Business Due Diligence Agent",
-  "Rule Assistant Agent",
-  "SAR Filing Agent",
-  "PEP Screening Agent",
+/** 4-node investigation graph (must match registry.yaml + supervisor) */
+export const DEFAULT_AGENTS = [
+  "Orchestrator",
+  "Entity Identity Agent",
+  "Financial Crime Investigator",
+  "Arbiter",
 ];
 
 interface AgentFleetContextValue {
   agents: AgentState[];
+  runningSkillId: string | null;
+  completedSkillIds: string[];
   setAgentRunning: (name: string) => void;
   setAgentCompleted: (name: string) => void;
   setAgentsIdle: () => void;
-  syncFromWorkflow: (agentNames: string[], running?: string) => void;
+  syncFromWorkflow: (
+    agentNames: string[],
+    running?: string,
+    runningSkillId?: string | null,
+    completedSkillIds?: string[]
+  ) => void;
 }
 
 const AgentFleetContext = createContext<AgentFleetContextValue | null>(null);
@@ -37,6 +39,8 @@ export function AgentFleetProvider({ children }: { children: ReactNode }) {
   const [agents, setAgents] = useState<AgentState[]>(
     DEFAULT_AGENTS.map((name) => ({ name, status: "idle" as AgentStatus }))
   );
+  const [runningSkillId, setRunningSkillId] = useState<string | null>(null);
+  const [completedSkillIds, setCompletedSkillIds] = useState<string[]>([]);
 
   const setAgentRunning = useCallback((name: string) => {
     setAgents((prev) =>
@@ -58,23 +62,47 @@ export function AgentFleetProvider({ children }: { children: ReactNode }) {
 
   const setAgentsIdle = useCallback(() => {
     setAgents(DEFAULT_AGENTS.map((name) => ({ name, status: "idle" as AgentStatus })));
+    setRunningSkillId(null);
+    setCompletedSkillIds([]);
   }, []);
 
-  const syncFromWorkflow = useCallback((agentNames: string[], running?: string) => {
-    setAgents((prev) =>
-      prev.map((a) => {
-        if (a.name === running) return { ...a, status: "running" as AgentStatus };
-        if (agentNames.includes(a.name)) {
-          return { ...a, status: "completed" as AgentStatus, lastRun: new Date().toISOString() };
-        }
-        return a;
-      })
-    );
-  }, []);
+  const syncFromWorkflow = useCallback(
+    (
+      agentNames: string[],
+      running?: string,
+      skillRunning?: string | null,
+      skillsDone?: string[]
+    ) => {
+      setAgents((prev) =>
+        prev.map((a) => {
+          if (a.name === running) return { ...a, status: "running" as AgentStatus };
+          if (agentNames.includes(a.name)) {
+            return { ...a, status: "completed" as AgentStatus, lastRun: new Date().toISOString() };
+          }
+          return a;
+        })
+      );
+      if (skillRunning !== undefined) {
+        setRunningSkillId(skillRunning ?? null);
+      }
+      if (skillsDone !== undefined) {
+        setCompletedSkillIds(skillsDone);
+      }
+    },
+    []
+  );
 
   return (
     <AgentFleetContext.Provider
-      value={{ agents, setAgentRunning, setAgentCompleted, setAgentsIdle, syncFromWorkflow }}
+      value={{
+        agents,
+        runningSkillId,
+        completedSkillIds,
+        setAgentRunning,
+        setAgentCompleted,
+        setAgentsIdle,
+        syncFromWorkflow,
+      }}
     >
       {children}
     </AgentFleetContext.Provider>

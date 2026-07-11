@@ -156,6 +156,31 @@ class RuleCompileRequest(BaseModel):
     conditions: dict[str, Any]
 
 
+class SubmitTransactionRequest(BaseModel):
+    """Stakeholder intake — new transaction for ML + agent investigation."""
+
+    customer_name: str
+    amount_usd: float
+    asset: str = "USDC"
+    network: str = "Ethereum"
+    direction: str = "withdrawal"
+    counterparty: str | None = None
+    customer_id: str | None = None
+    partner: str | None = None
+    travel_rule_status: str = "complete"
+    country: str = "United States"
+    wallet_address: str | None = None
+    account_age_days: int = 30
+    connections: int = 3
+    mixer_exposure: bool = False
+    sanctions_hit: bool = False
+    pep_hit: bool = False
+    device_risk: str = "low"
+    risk_tags: list[str] | None = None
+    scenario_id: str | None = None
+    run_triage: bool = True
+
+
 ROLES = {"analyst", "supervisor", "auditor"}
 
 
@@ -191,7 +216,15 @@ def root():
 
 @app.get("/api/health")
 def health(bedrock_live: bool = False):
+    from agent.graph_runtime import langgraph_available
+    from agent.ml_model import get_model
     from db.models import is_sqlite
+
+    try:
+        _, ml_meta = get_model()
+        ml_info = {"ready": True, **{k: ml_meta.get(k) for k in ("model_name", "mae", "n_train")}}
+    except Exception as e:
+        ml_info = {"ready": False, "error": str(e)}
 
     return {
         "status": "ok",
@@ -202,8 +235,10 @@ def health(bedrock_live: bool = False):
         "bedrock": bedrock_health(live=bedrock_live),
         "agents_registered": len(list_agents()),
         "skills_registered": len(list_skills()),
-        "pipeline_steps": 11,
-        "platform": "Agent → Skills → Tools",
+        "pipeline_nodes": 4,
+        "runtime": "langgraph" if langgraph_available() else "supervisor",
+        "ml": ml_info,
+        "architecture": "Agent → Skills → Tools",
         "tenant_default": TENANT_DEFAULT,
     }
 
@@ -391,6 +426,27 @@ def list_alerts():
     return load_alerts()
 
 
+@app.get("/api/scenarios")
+def scenarios():
+    """Preset demo scenarios for the submit form — each drives a real, graph-backed investigation."""
+    from agent.scenarios import get_scenarios
+
+    return {"scenarios": get_scenarios()}
+
+
+@app.post("/api/transactions/submit")
+def submit_tx(body: SubmitTransactionRequest, x_role: str | None = Header(default=None)):
+    """Stakeholder path: input tx → ML validate → 4-node investigation → queue."""
+    _role(x_role)
+    from agent.ingest import submit_transaction
+
+    payload = body.model_dump()
+    run_triage = bool(payload.pop("run_triage", True))
+    if body.risk_tags is None:
+        payload["risk_tags"] = []
+    return submit_transaction(payload, run_triage=run_triage)
+
+
 def _case_id_from_alert(a: dict[str, Any]) -> str:
     # Phase K: case-centric grouping (default: customer_id)
     return str(a.get("case_id") or a.get("customer_id") or a.get("id"))
@@ -449,18 +505,22 @@ def list_cases():
 
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str):
+    """Case rollup by customer/case id, or a resolved precedent case if no rollup exists."""
     alerts = load_alerts()
     matched = [a for a in alerts if _case_id_from_alert(a) == case_id]
-    if not matched:
-        raise HTTPException(404, "Case not found")
-    matched.sort(key=lambda a: str(a.get("created_at", "")), reverse=True)
-    head = matched[0]
-    return {
-        **_case_rollup(matched),
-        "alerts": matched,
-        "case_notes": head.get("case_notes") or [],
-        "policy_version": (head.get("triage_result") or {}).get("policy_version"),
-    }
+    if matched:
+        matched.sort(key=lambda a: str(a.get("created_at", "")), reverse=True)
+        head = matched[0]
+        return {
+            **_case_rollup(matched),
+            "alerts": matched,
+            "case_notes": head.get("case_notes") or [],
+            "policy_version": (head.get("triage_result") or {}).get("policy_version"),
+        }
+    for case in load_resolved_cases():
+        if case.get("id") == case_id:
+            return case
+    raise HTTPException(404, "Case not found")
 
 
 @app.post("/api/cases/{case_id}/state")
@@ -809,14 +869,6 @@ def policy(x_tenant: str | None = Header(default=None)):
 @app.get("/api/policy/suggestions")
 def policy_suggestions():
     return rag_engine.suggest_policy_refinement()
-
-
-@app.get("/api/cases/{case_id}")
-def get_resolved_case(case_id: str):
-    for case in load_resolved_cases():
-        if case["id"] == case_id:
-            return case
-    raise HTTPException(404, "Case not found")
 
 
 @app.get("/api/alerts/{alert_id}/graph")

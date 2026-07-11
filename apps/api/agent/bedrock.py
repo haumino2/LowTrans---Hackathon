@@ -71,6 +71,27 @@ def invoke_claude(
     return response["output"]["message"]["content"][0]["text"]
 
 
+def converse_with_tools(
+    *,
+    messages: list[dict[str, Any]],
+    system: str = "",
+    tools: list[dict[str, Any]] | None = None,
+    max_tokens: int = 2048,
+    temperature: float = 0.2,
+) -> dict[str, Any]:
+    """Bedrock Converse with optional toolConfig (agent loop)."""
+    client = get_client()
+    kwargs: dict[str, Any] = {
+        "modelId": MODEL_ID,
+        "messages": messages,
+        "inferenceConfig": {"maxTokens": max_tokens, "temperature": temperature},
+    }
+    if system:
+        kwargs["system"] = [{"text": system}]
+    if tools:
+        kwargs["toolConfig"] = {"tools": tools}
+    return client.converse(**kwargs)
+
 EmbedInputType = Literal["search_document", "search_query", "classification", "clustering"]
 
 
@@ -131,7 +152,7 @@ def safe_invoke(user_message: str, system: str = "", fallback: str = "") -> str:
     """Invoke with graceful fallback for demo stability."""
     try:
         return invoke_claude(user_message, system=system)
-    except (ClientError, BotoCoreError, KeyError, json.JSONDecodeError) as e:
+    except (ClientError, BotoCoreError, KeyError, json.JSONDecodeError, Exception) as e:
         if fallback:
             return fallback
         raise RuntimeError(f"Bedrock invoke failed: {e}") from e

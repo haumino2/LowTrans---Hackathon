@@ -53,6 +53,11 @@ const STATUS_CONFIG: Record<
 };
 
 const AGENT_ICONS: Record<string, LucideIcon> = {
+  Orchestrator: Zap,
+  "Entity Identity Agent": Shield,
+  "Financial Crime Investigator": GitBranch,
+  Arbiter: FileWarning,
+  // Legacy step labels (older triage results)
   "Alert Ingestion": Inbox,
   "RAG Memory": Brain,
   "Transaction Monitoring Agent": BarChart3,
@@ -64,6 +69,7 @@ const AGENT_ICONS: Record<string, LucideIcon> = {
   "Decision Orchestrator": Zap,
   "SAR Filing Agent": FileWarning,
   "Audit Logger": ScrollText,
+  "Agent Loop": Bot,
 };
 
 interface Props {
